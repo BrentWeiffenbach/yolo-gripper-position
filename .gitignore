@@ -1,0 +1,14 @@
+# Ignore Python virtual environment directories
+.venv/
+venv/
+ENV/
+env/
+
+# Ignore VSCode settings directory
+.vscode/
+
+# Preserve configuration files
+!.venv/config/
+!venv/config/
+!ENV/config/
+!env/config/
