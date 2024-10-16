@@ -1,9 +1,26 @@
+import os
 import cv2
 
+import requests
 from ultralytics import YOLO
 
+model_name = 'yolo11n.pt'
+# Download the YOLO model
+if not os.path.isfile(model_name):
+    print(f'{model_name} does not exist. Downloading...')
+    download_url = 'https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt'
+
+    response = requests.get(download_url)
+
+    if response.status_code == 200:
+        with open(model_name, 'wb') as file:
+            file.write(response.content)
+        print(f'Downloaded {model_name}')
+    else:
+        print(f'Failed to download {model_name}')
+
 # Load the YOLO model
-model = YOLO('yolo11n.pt')
+model = YOLO(model_name)
 
 # capture video
 cap = cv2.VideoCapture(0)
