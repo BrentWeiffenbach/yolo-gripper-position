@@ -13,6 +13,9 @@ env/
 !ENV/config/
 !env/config/
 
+.mypy_cache
+out/
+
 # Ignore pre-trained models
 yolo11n.pt
 yolo11n-obb.pt

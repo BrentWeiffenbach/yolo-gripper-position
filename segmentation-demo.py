@@ -1,9 +1,11 @@
 import os
+from typing import List
 import cv2
 
 import numpy as np
 import requests
 from ultralytics import YOLO
+from ultralytics.engine.results import Results
 
 model_name = 'yolo11n-seg.pt'
 # Check if model exists
@@ -20,7 +22,7 @@ if not os.path.isfile(model_name):
         print(f'Failed to download {model_name}')
 
 # Load the YOLO model
-model = YOLO(model_name)
+model: YOLO = YOLO(model_name)
 
 # capture video
 cap = cv2.VideoCapture(0)
@@ -33,7 +35,7 @@ while cap.isOpened():
 
     if success:
         # Run YOLO inference on the frame
-        results = model(frame)
+        results: List[Results] = model(frame)
 
         # Visualize the results on the frame
         # annotated_frame = results[0].plot(boxes=False)
