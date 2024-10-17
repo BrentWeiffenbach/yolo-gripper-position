@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import requests
 from ultralytics import YOLO
+from ultralytics.engine.model import Model
 from ultralytics.engine.results import Results
 
 model_name = 'yolo11n-seg.pt'
@@ -22,11 +23,31 @@ if not os.path.isfile(model_name):
         print(f'Failed to download {model_name}')
 
 # Load the YOLO model
-model: YOLO = YOLO(model_name)
+model: Model = YOLO(model_name)
 
 # capture video
 cap = cv2.VideoCapture(0)
 font = cv2.FONT_HERSHEY_SIMPLEX
+
+def get_midpoints(coordinates: np.ndarray | list[tuple]) -> list[tuple[np.int32, np.int32]]:
+    """This function takes a list of coordinates and creates a line between them. It returns the coordinates of the midpoint of said line.
+
+    Args:
+        coordinates (np.ndarray | list[tuple]): A list of coordinates to get the midpoints from.
+
+    Returns:
+        list[tuple[np.int32, np.int32]]: A list of coordinates containing the midpoints of their connecting lines.
+    """
+    midpoints: list[tuple[np.int32, np.int32]] = []
+    
+    for i in range(len(coordinates) - 1):
+        x1, y1 = coordinates[i]
+        x2, y2 = coordinates[i + 1]
+        
+        midpoint = ((x1 + x2) / 2, (y1 + y2) / 2)
+        midpoints.append(midpoint)
+    
+    return midpoints[::2] # Halfs the number of midpoints by taking every other one
 
 # Loop through the video frames
 while cap.isOpened():
@@ -42,13 +63,21 @@ while cap.isOpened():
         for result in results:
             if result.masks:
                 # for mask in result.masks:
-                mask = result.masks[0]
+                mask = result.masks[0] # Get only the first found mask
                 if mask.xy:
                     for segment in mask.xy:
-                        segment = np.array(segment, dtype=np.int32)
+                        steps = 4
+                        midpoints = np.array(segment, dtype=np.int32)
+                        for _ in range(steps):
+                            midpoints = get_midpoints(midpoints)
+                        
+                        for midpoint in midpoints:
+                            midpoint_int = tuple(map(int, midpoint))  # Convert to integer
 
-                        # Draw line on the frame (webcam image)
-                        cv2.polylines(frame, [segment], isClosed=False, color=(0, 255, 0), thickness=2)
+                            cv2.circle(frame, center=midpoint_int, radius=4, color=(0, 255, 0), thickness=-1)
+
+                            # Use the following below to draw a smooth line of the outline
+                            # cv2.polylines(frame, [segment], isClosed=False, color=(0, 255, 0), thickness=2)
 
         # Add information to quit to frame
         # cv2.putText(annotated_frame, text="Press 'q' to quit", org=(0, frame.shape[0] - 10), fontFace=font, fontScale=0.5, color=(0, 0, 255))
