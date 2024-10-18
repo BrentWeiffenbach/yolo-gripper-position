@@ -26,7 +26,7 @@ if not os.path.isfile(model_name):
 model: Model = YOLO(model_name)
 
 # capture video
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1)
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 def get_midpoints(coordinates: np.ndarray | list[tuple]) -> list[tuple[np.int32, np.int32]]:
@@ -66,7 +66,7 @@ while cap.isOpened():
                 mask = result.masks[0] # Get only the first found mask
                 if mask.xy:
                     for segment in mask.xy:
-                        steps = 4
+                        steps = 3
                         midpoints = np.array(segment, dtype=np.int32)
                         for _ in range(steps):
                             midpoints = get_midpoints(midpoints)
@@ -78,6 +78,7 @@ while cap.isOpened():
 
                             # Use the following below to draw a smooth line of the outline
                             # cv2.polylines(frame, [segment], isClosed=False, color=(0, 255, 0), thickness=2)
+                        cv2.polylines(frame, [np.array(midpoints, dtype=np.int32)], isClosed=True, color=(0, 255, 0), thickness=2)
 
         # Add information to quit to frame
         # cv2.putText(annotated_frame, text="Press 'q' to quit", org=(0, frame.shape[0] - 10), fontFace=font, fontScale=0.5, color=(0, 0, 255))
