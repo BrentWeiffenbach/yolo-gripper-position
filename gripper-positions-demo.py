@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Literal
 import cv2
 
 import numpy as np
@@ -27,8 +27,12 @@ if not os.path.isfile(model_name):
 # Load the YOLO model
 model: Model = YOLO(model_name)
 
+camera_source: Literal[0] | Literal[1] = 0
+"""The camera source to use. Integer of either 0 or 1
+"""
+
 # capture video
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(camera_source)
 font = cv2.FONT_HERSHEY_SIMPLEX
 
 # Variables to store mouse click coordinates
@@ -157,13 +161,22 @@ while cap.isOpened():
 
         # Add information to quit to frame
         cv2.putText(frame, text="Press 'q' to quit", org=(0, frame.shape[0] - 10), fontFace=font, fontScale=0.5, color=(0, 0, 255))
+        cv2.putText(frame, text="Press 'c' to change camera source", org=(0, frame.shape[0] - 30), fontFace=font, fontScale=0.5, color=(0, 0, 255))
 
         # Display the annotated frame
         cv2.imshow("YOLO Inference", frame)
 
+        # Check to see if there is a pressed key
+        key = cv2.waitKey(1) & 0xFF
+
         # Break the loop if 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        if key == ord("q"):
             break
+        
+        # Switch camera if 'c' is pressed
+        if key & 0xFF == ord("c"):
+            camera_source = 1 - camera_source # type: ignore
+            cap = cv2.VideoCapture(camera_source)
     else:
         # Break the loop if the end of the video is reached
         break
