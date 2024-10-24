@@ -3,6 +3,7 @@
 venv/
 ENV/
 env/
+__pycache__
 
 # Ignore VSCode settings directory
 .vscode/
