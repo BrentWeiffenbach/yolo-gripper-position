@@ -58,7 +58,6 @@ def mouse_callback(event, x, y, flags, param):
     global mouse_click_coords
     if event == cv2.EVENT_LBUTTONDOWN:
         mouse_click_coords = np.array([x,y])
-        
 
 # Set mouse callback function
 cv2.namedWindow("YOLO Inference")
@@ -107,8 +106,8 @@ while cap.isOpened():
                         # Draw a line from the center of mass to the polygon edge in direction of mouse click
                         if mouse_click_coords is not None:
                             reversed_mouse_click_coords = 2 * center - mouse_click_coords
-                            intersection_one = find_last_intersection(center=center, direction_pos=mouse_click_coords, polygon_points=midpoints)
-                            intersection_two = find_last_intersection(center=center, direction_pos=reversed_mouse_click_coords, polygon_points=midpoints)
+                            intersection_one = find_last_intersection(center=center, direction_pos=mouse_click_coords, polygon_points=np.array(midpoints))
+                            intersection_two = find_last_intersection(center=center, direction_pos=reversed_mouse_click_coords, polygon_points=np.array(midpoints))
                             cv2.line(frame, tuple(center), tuple(intersection_one.astype(int)), (255, 0, 0), 2)
                             cv2.line(frame, tuple(center), tuple(intersection_two.astype(int)), (255, 0, 0), 2)
                             
@@ -145,6 +144,15 @@ while cap.isOpened():
                             # Draw the rectangles
                             cv2.polylines(frame, [rect_points_one], isClosed=True, color=(0, 255, 255), thickness=2)
                             cv2.polylines(frame, [rect_points_two], isClosed=True, color=(0, 255, 255), thickness=2)
+                            
+                            # Number of midpoints within the rectangle
+                            # Check if midpoints are within the rectangles
+                            midpoints_within_rect_one = sum(cv2.pointPolygonTest(rect_points_one, (float(midpoint[0]), float(midpoint[1])), False) >= 0 for midpoint in midpoints)
+                            midpoints_within_rect_two = sum(cv2.pointPolygonTest(rect_points_two, (float(midpoint[0]), float(midpoint[1])), False) >= 0 for midpoint in midpoints)
+
+                            # Display the number of midpoints within the rectangles
+                            cv2.putText(frame, f'Midpoints in Rect 1: {midpoints_within_rect_one}', (10, 30), font, 0.5, (0, 255, 255), 1, cv2.LINE_AA)
+                            cv2.putText(frame, f'Midpoints in Rect 2: {midpoints_within_rect_two}', (10, 50), font, 0.5, (0, 255, 255), 1, cv2.LINE_AA)
                             
 
         # Add information to quit to frame
