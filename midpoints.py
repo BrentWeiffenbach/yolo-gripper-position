@@ -36,7 +36,7 @@ def gripper_pose(direction: np.ndarray, center: np.ndarray, midpoints: NDArray[n
         tuple: Two arrays of rectangle corner points representing the gripper pose.
     """
     
-    reversedDirection = 2 * center - direction
+    reversedDirection = -direction
     intersection_one = find_last_intersection(center=center, direction_pos=direction, polygon_points=np.array(midpoints))
     intersection_two = find_last_intersection(center=center, direction_pos=reversedDirection, polygon_points=np.array(midpoints))
     

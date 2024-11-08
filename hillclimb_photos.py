@@ -6,9 +6,9 @@ import requests
 from ultralytics import YOLO
 from ultralytics.engine.model import Model
 from ultralytics.engine.results import Results
-from raycasting import find_last_intersection
 from midpoints import get_midpoints, find_midpoints_in_polygon, gripper_pose, display_gripper
 from yolo_utils.setup_yolo import setup_yolo
+from raycasting import find_closest_intersection
 
 # setup yolo model
 model_name = 'yolo11n-seg.pt'
@@ -17,7 +17,7 @@ setup_yolo(model_name)
 model: Model = YOLO(model_name)
 
 # Load the image
-image_path = 'pen.jpg'
+image_path = 'scissors.jpg'
 image_path = os.path.abspath(image_path)
 frame = cv2.imread(image_path)
 if frame is None:
@@ -60,14 +60,15 @@ if result.masks:
         cv2.circle(frame, (cX, cY), 5, (255, 0, 0), -1)
 
         # Hill climb to best gripper pose by drawing a line from the center of mass to the polygon edge
-        initial = np.random.randint(0, frame.shape[1], size=2)  # random initial direction
+        # initial = np.random.randint(-3, frame.shape[1], size=2)  # random initial direction
+        # initial = np.array([0, -1])
+        initial = find_closest_intersection(center=center, polygon_points=np.array(midpoints))
+        magnitude = np.linalg.norm(initial - center)
         # normalize
         initial = initial / np.linalg.norm(initial)
         print("Initial Directions:", initial)
         # draw initial direction
-        cv2.arrowedLine(frame, tuple(center), tuple(center + (initial * 50).astype(int)), (100, 100, 100), 2)
-        # Display the initial direction vector
-        # cv2.arrowedLine(frame, tuple(center), tuple(center + (initial * 50).astype(int)), (0, 0, 0), 2)
+        cv2.arrowedLine(frame, tuple(center), tuple(center + (initial * magnitude).astype(int)), (100, 100, 100), 2)
         current = initial
         i=0
         while True:
@@ -90,6 +91,7 @@ if result.masks:
             # normalize the direction
             neighbor_cw = neighbor_cw / np.linalg.norm(neighbor_cw)
             neighbor_ccw = neighbor_ccw / np.linalg.norm(neighbor_ccw)
+            
             # draw direction for debuging
             # cv2.arrowedLine(frame, tuple(center), tuple(center + (neighbor_cw * 50).astype(int)), (255, 0, 0), 2)
             # cv2.arrowedLine(frame, tuple(center), tuple(center + (neighbor_ccw * 50).astype(int)), (255, 0, 0), 2)
@@ -104,7 +106,7 @@ if result.masks:
             max_neighbor = max(cw_value, ccw_value)
             
             # debug drawings:
-            print("drawing debug")
+            # print("drawing debug")
             # Draw the rectangles
             # display_gripper(gripper_polygons, frame)
             # draw neighbors
@@ -126,7 +128,7 @@ if result.masks:
                 
         # Display the number of midpoints, gripper rectangles, and ending arrow
         print("Final direction: ", current)
-        cv2.arrowedLine(frame, tuple(center), tuple(center + (current * 50).astype(int)), (255, 0, 0), 2)
+        cv2.arrowedLine(frame, tuple(center), tuple(center + (current * magnitude).astype(int)), (255, 0, 0), 2)
         display_gripper(gripper_polygons, frame)
         cv2.putText(frame, f'Midpoints in Rects: {current_value}', (10, 30), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
         cv2.putText(frame, f'Midpoints in cw: {cw_value}', (10, 50), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)

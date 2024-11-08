@@ -44,7 +44,7 @@ def find_last_intersection(center: np.ndarray, direction_pos: np.ndarray, polygo
     Returns:
         np.ndarray: Last intersection point if found
     """
-    ray_direction = direction_pos - center
+    ray_direction = direction_pos
     intersections: List[np.ndarray] = []
     
     for i in range(len(polygon_points)):
@@ -60,3 +60,21 @@ def find_last_intersection(center: np.ndarray, direction_pos: np.ndarray, polygo
     # found no intersection
     print("found no intersection")
     return direction_pos
+
+def find_closest_intersection(center: np.ndarray, polygon_points: np.ndarray) -> np.ndarray:
+    # init inersections
+    intersections: List[np.ndarray] = []
+    distances: List[np.ndarray] = []
+    
+    # loop through polygon points to find every intersection
+    for i in range(len(polygon_points)):
+        segment_start = polygon_points[i]
+        segment_end = polygon_points[(i+1) % len(polygon_points)]
+        ray_direction = polygon_points[i] - center
+        intersection = intersect(center, ray_direction, segment_start, segment_end)
+        if intersection is not None:
+            distance = np.linalg.norm(intersection - center)
+            distances.append(distance.astype(int))
+            intersections.append(intersection)
+            
+    return intersections[np.argmin(distances)]
