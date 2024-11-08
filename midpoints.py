@@ -2,7 +2,6 @@ import numpy as np
 import cv2
 from raycasting import find_last_intersection
 from numpy.typing import NDArray
-from numpy import signedinteger, int32 as _32Bit
 
 def get_midpoints(coordinates: np.ndarray | list[tuple]) -> list[tuple[np.int32, np.int32]]:
     """This function takes a list of coordinates and creates a line between them. It returns the coordinates of the midpoint of said line.
@@ -19,7 +18,7 @@ def get_midpoints(coordinates: np.ndarray | list[tuple]) -> list[tuple[np.int32,
         x1, y1 = coordinates[i]
         x2, y2 = coordinates[i + 1]
         
-        midpoint = ((x1 + x2) / 2, (y1 + y2) / 2)
+        midpoint = (np.int32((x1 + x2) / 2), np.int32((y1 + y2) / 2))
         midpoints.append(midpoint)
     
     return midpoints[::2] # Halfs the number of midpoints by taking every other one

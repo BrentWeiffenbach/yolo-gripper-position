@@ -17,7 +17,7 @@ setup_yolo(model_name)
 model: Model = YOLO(model_name)
 
 # Load the image
-image_path = 'scissors.jpg'
+image_path = 'bottle.jpg'
 image_path = os.path.abspath(image_path)
 frame = cv2.imread(image_path)
 if frame is None:
@@ -33,7 +33,7 @@ if result.masks:
     if mask.xy:
         segment = mask.xy[0]  # get only the first segment
         # segment the mask to find midpoints
-        steps = 3
+        steps = 1
         midpoints = np.array(segment, dtype=np.int32)
         for _ in range(steps):
             midpoints = get_midpoints(midpoints)
@@ -44,7 +44,7 @@ if result.masks:
             cv2.circle(frame, center=midpoint_int, radius=4, color=(0, 255, 0), thickness=-1)
 
         # Draw the polygon outline
-        cv2.polylines(frame, [np.array(midpoints, dtype=np.int32)], isClosed=True, color=(0, 255, 0), thickness=2)
+        # cv2.polylines(frame, [np.array(midpoints, dtype=np.int32)], isClosed=True, color=(0, 255, 0), thickness=2)
 
         # Calculate the moments of the polygon for center of mass
         moments = cv2.moments(np.array(midpoints, dtype=np.int32))
