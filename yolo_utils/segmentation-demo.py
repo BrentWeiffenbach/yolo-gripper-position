@@ -74,10 +74,10 @@ while cap.isOpened():
                     for midpoint in midpoints:
                         midpoint_int = tuple(map(int, midpoint))  # Convert to integer
 
-                        cv2.circle(frame, center=midpoint_int, radius=4, color=(0, 255, 0), thickness=-1)
+                        # cv2.circle(frame, center=midpoint_int, radius=4, color=(0, 255, 0), thickness=-1)
 
                         # Use the following below to draw a smooth line of the outline
-                        # cv2.polylines(frame, [segment], isClosed=False, color=(0, 255, 0), thickness=2)
+                        cv2.polylines(frame, [np.array(segment, dtype=np.int32)], isClosed=False, color=(0, 255, 0), thickness=2)
                     # cv2.polylines(frame, [np.array(midpoints, dtype=np.int32)], isClosed=True, color=(0, 255, 0), thickness=2)
 
         # Add information to quit to frame
