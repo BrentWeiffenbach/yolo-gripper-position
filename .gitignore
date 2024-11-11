@@ -15,6 +15,7 @@ __pycache__
 !env/config/
 
 .mypy_cache
+.pytest_cache
 out/
 
 # Ignore pre-trained models

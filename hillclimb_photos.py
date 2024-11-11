@@ -2,11 +2,10 @@ import os
 from typing import List
 import cv2
 import numpy as np
-import requests
 from ultralytics import YOLO
 from ultralytics.engine.model import Model
 from ultralytics.engine.results import Results
-from midpoints import get_midpoints, find_midpoints_in_polygon, gripper_pose, display_gripper
+from midpoints import calculate_center_of_mass, get_midpoints, find_midpoints_in_polygon, gripper_pose, display_gripper
 from yolo_utils.setup_yolo import setup_yolo
 from raycasting import find_closest_intersection
 
@@ -46,18 +45,10 @@ if result.masks:
         # Draw the polygon outline
         # cv2.polylines(frame, [np.array(midpoints, dtype=np.int32)], isClosed=True, color=(0, 255, 0), thickness=2)
 
-        # Calculate the moments of the polygon for center of mass
-        moments = cv2.moments(np.array(midpoints, dtype=np.int32))
+        center = calculate_center_of_mass(edge_points=midpoints)
 
-        # Compute the center of mass
-        if moments["m00"] != 0:
-            cX = int(moments["m10"] / moments["m00"])
-            cY = int(moments["m01"] / moments["m00"])
-            center = np.array([cX, cY])
-        else:
-            cX, cY = 0, 0
         # Draw the center of mass
-        cv2.circle(frame, (cX, cY), 5, (255, 0, 0), -1)
+        cv2.circle(frame, tuple(center), 5, (255, 0, 0), -1)
 
         # Hill climb to best gripper pose by drawing a line from the center of mass to the polygon edge
         # initial = np.random.randint(-3, frame.shape[1], size=2)  # random initial direction

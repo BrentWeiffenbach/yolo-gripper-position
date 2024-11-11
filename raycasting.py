@@ -1,6 +1,6 @@
 import numpy as np
-import cv2
-from typing import Optional, List
+import numpy.typing as npt
+from typing import Annotated, Optional, List
 
 def intersect(ray_origin: np.ndarray, ray_direction: np.ndarray, segment_start: np.ndarray, segment_end: np.ndarray) -> Optional[np.ndarray]:
     """
@@ -32,7 +32,7 @@ def intersect(ray_origin: np.ndarray, ray_direction: np.ndarray, segment_start: 
         return ray_origin + t1 * ray_direction
     return None
 
-def find_last_intersection(center: np.ndarray, direction_pos: np.ndarray, polygon_points: np.ndarray) -> np.ndarray:
+def find_last_intersection(center: Annotated[npt.NDArray[np.int32], (2,)], direction_pos: Annotated[npt.NDArray[np.float32], (2,)], polygon_points: npt.NDArray[np.int32]) -> npt.NDArray[np.float64]:
     """
     Finds last intersection point along ray on polygon
     
