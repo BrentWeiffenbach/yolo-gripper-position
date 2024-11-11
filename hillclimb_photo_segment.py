@@ -80,7 +80,6 @@ if results and results[0].masks is not None and results[0].boxes is not None:
                 current_distance = np.float64(0)
 
             current_distance += segment_length
-    
     center = calculate_center_of_mass(edge_points=edge_points)
 
     # Draw the center of mass
@@ -162,6 +161,7 @@ if results and results[0].masks is not None and results[0].boxes is not None:
             break
         current = new_node
         
+    max_value = len(edge_points)
     current_value = current.value
     gripper_polygons = current.gripper_polygons
     cw_value = current.find_neighbor(10).value
@@ -169,6 +169,10 @@ if results and results[0].masks is not None and results[0].boxes is not None:
     current.display(frame)
     current = current.direction
 
+    # Ensure that all the values are proper
+    # assert current_value <= max_value and current_value >= 0
+    # assert cw_value <= max_value and cw_value >= 0
+    # assert ccw_value <= max_value and ccw_value >= 0
             
     # Display the number of midpoints, gripper rectangles, and ending arrow
     print("Final direction: ", current)

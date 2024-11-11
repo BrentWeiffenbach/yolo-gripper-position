@@ -106,8 +106,11 @@ class Node:
         """
         p1, p2 = self.gripper_polygons
         _value = self.get_midpoints_in_node()
-        # return _value - calculate_intersection_area(p1, self.edgepoints) + calculate_intersection_area(p2, self.edgepoints)
-        new_value = _value - calculate_intersection_area(p1, get_minimum_bounding_box(self.edgepoints)) + calculate_intersection_area(p2, get_minimum_bounding_box(self.edgepoints))
+        for edgepoint in self.edgepoints:
+            assert edgepoint[0] >= 0
+            assert edgepoint[1] >= 0
+        return _value - calculate_intersection_area(p1, self.edgepoints) + calculate_intersection_area(p2, self.edgepoints)
+        # new_value = _value - calculate_intersection_area(p1, get_minimum_bounding_box(self.edgepoints)) + calculate_intersection_area(p2, get_minimum_bounding_box(self.edgepoints))
         assert new_value >= 0 # Assert to ensure that value is never less than 0
         return new_value
     
@@ -167,8 +170,12 @@ class Node:
 @staticmethod
 def calculate_intersection_area(polygon1: npt.NDArray[np.int32], polygon2: npt.NDArray[np.int32]) -> float:
     """Calculate the intersection area between two polygons."""
-    intersection, _ = cv2.intersectConvexConvex(np.array(polygon1, dtype=np.float32), np.array(polygon2, dtype=np.float32))
-    return intersection or 0.0
+    try:
+        intersection, _ = cv2.intersectConvexConvex(np.array(polygon1, dtype=np.float32), np.array(polygon2, dtype=np.float32))
+        return intersection
+    except Exception as e:
+        print("Error trying to calculate the intersection area: ", e)
+        return 0.0 # Defults to 0.0
 
 @staticmethod
 def get_minimum_bounding_box(edge_points: List[Annotated[npt.NDArray[np.int32], (2,)]]) -> Annotated[npt.NDArray[np.int32], (4,)]:
