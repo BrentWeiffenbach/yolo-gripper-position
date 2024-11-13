@@ -7,8 +7,8 @@ from ultralytics import YOLO
 from ultralytics.utils.plotting import Annotator, colors
 from ultralytics.engine.results import Results
 from ultralytics.engine.model import Model
-from midpoints import calculate_center_of_mass, find_midpoints_in_polygon, display_gripper
-from node import Node, calculate_intersection_area, get_minimum_bounding_box
+from midpoints import calculate_center_of_mass
+from node import Node
 from yolo_utils.setup_yolo import setup_yolo
 from raycasting import find_closest_intersection
 
@@ -33,12 +33,13 @@ results: List[Results] = model(frame)
 result = results[0]
 annotator = Annotator(frame, line_width=2)
 
-if results and results[0].masks is not None and results[0].boxes is not None:
-    clss = results[0].boxes.cls.tolist()
-    masks = results[0].masks.xy
-    edge_points: List[Annotated[npt.NDArray[np.int32], (2,)]] = [] # Moved to outside of loop to ensure edge_points is not Unbound
-    
-    # TODO: Turn this into a function to improve the readability
+def get_edge_points(frame: cv2.typing.MatLike, annotator: Annotator, clss: List, masks: npt.NDArray[np.float32]) -> List[Annotated[npt.NDArray[np.int32], (2,)]]:
+    """Gets the edge points of a given frame
+
+    Returns:
+        List[NDArray[int32]]: The edge points of the masks
+    """
+    edge_points: List[Annotated[npt.NDArray[np.int32], (2,)]] = []
     for mask, cls in zip(np.array(masks), clss):
         color = colors(int(cls), True)
         txt_color = annotator.get_txt_color(color)
@@ -80,6 +81,14 @@ if results and results[0].masks is not None and results[0].boxes is not None:
                 current_distance = np.float64(0)
 
             current_distance += segment_length
+    return edge_points
+
+if results and results[0].masks is not None and results[0].boxes is not None:
+    clss = results[0].boxes.cls.tolist()
+    masks: npt.NDArray[np.float32] = np.array(results[0].masks.xy) # This is actually a NDArray[NDArray[NDArray[float32]]]
+
+    edge_points: List[Annotated[npt.NDArray[np.int32], (2,)]] = get_edge_points(frame, annotator, clss, masks)
+    
     center = calculate_center_of_mass(edge_points=edge_points)
 
     # Draw the center of mass
