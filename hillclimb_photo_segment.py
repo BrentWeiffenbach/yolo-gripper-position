@@ -25,7 +25,6 @@ frame = cv2.imread(image_path)
 if frame is None:
     print(f"Failed to load image: {image_path}")
     exit()
-# names = model.names # This is never getting used
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 # Process the image
@@ -102,94 +101,43 @@ if results and results[0].masks is not None and results[0].boxes is not None:
     initial = initial / np.linalg.norm(initial)
     print("Initial Directions:", initial)
 
-    # draw initial direction
+    # draw initial direction in gray
     cv2.arrowedLine(frame, tuple(center), tuple(center + (initial * magnitude).astype(int)), (100, 100, 100), 2)
     # current = initial
     current = Node(direction=initial, center=center, edgepoints=edge_points)
     i = 0
-
+    # Hill climb to best value for gripper position
     while True:
         i += 1
         print("runs:", i)
-        # find gripper polygons in current direction
-        # gripper_polygons = gripper_pose(current, center, edge_points)
-
-        # # find num of midpoints in gripper (should correlate to higher value = more surface area to grab)   
-        # current_value = find_midpoints_in_polygon(gripper_polygons[0], edge_points) + find_midpoints_in_polygon(gripper_polygons[1], edge_points)
-        # step_angle = 10 * np.pi / 180  # 10 degrees
-        # rotation_matrix_cw = np.array([[np.cos(step_angle), np.sin(step_angle)],
-        #                                 [-np.sin(step_angle), np.cos(step_angle)]])
-        # rotation_matrix_ccw = np.array([[np.cos(step_angle), -np.sin(step_angle)],
-        #                                 [np.sin(step_angle), np.cos(step_angle)]])           
-        
-        # # find neighbors based on 10 degrees clockwise and counter clockwise
-        # neighbor_cw = np.dot(rotation_matrix_cw, current)
-        # neighbor_ccw = np.dot(rotation_matrix_ccw, current)
-
-        # # normalize the direction
-        # neighbor_cw = neighbor_cw / np.linalg.norm(neighbor_cw)
-        # neighbor_ccw = neighbor_ccw / np.linalg.norm(neighbor_ccw)
-        
-        # print("Directions: \t cw:", neighbor_cw, "ccw:", neighbor_ccw)
-        
-        # # find neighboring gripper polygons
-        # cw_polygons = gripper_pose(neighbor_cw, center, edge_points) 
-        # ccw_polygons = gripper_pose(neighbor_ccw, center, edge_points)
-
-        # # calculate midpoints in each gripper polygon of each neighbor
-        # cw_value = find_midpoints_in_polygon(cw_polygons[0], edge_points) + find_midpoints_in_polygon(cw_polygons[1], edge_points)
-        # ccw_value = find_midpoints_in_polygon(ccw_polygons[0], edge_points) + find_midpoints_in_polygon(ccw_polygons[1], edge_points)
-        
-        # # Maybe use the max height/width of the points in edge_points?
-        # minimum_bounding_box = get_minimum_bounding_box(edge_points)
-
-        # # Calculate intersection areas
-        # cw_intersection_area = calculate_intersection_area(cw_polygons[0], minimum_bounding_box) + calculate_intersection_area(cw_polygons[1], minimum_bounding_box)
-        # ccw_intersection_area = calculate_intersection_area(ccw_polygons[0], minimum_bounding_box) + calculate_intersection_area(ccw_polygons[1], minimum_bounding_box)
-        
-        # # Adjust values based on intersection areas
-        # cw_value -= cw_intersection_area
-        # ccw_value -= ccw_intersection_area
-        
-        # max_neighbor = max(cw_value, ccw_value)
-        
-        # if max_neighbor > current_value:
-        #     if max_neighbor == cw_value:
-        #         print("moving cw from current:", current_value, " to:", cw_value, "Where direction current:", current, "new direction: ", neighbor_cw)
-        #         current = neighbor_cw
-        #         continue
-        #     if max_neighbor == ccw_value:
-        #         print("moving ccw from current:", current_value, " to:", ccw_value, "Where direction current:", current, "new direction: ", neighbor_ccw)
-        #         current = neighbor_ccw
-        #         continue
-        # elif max_neighbor <= current_value:
-        #     print("found max at: ", max_neighbor)
-        #     break
         new_node = current.compare_neighbor()
         if (new_node is current):
             break
         current = new_node
         
+    # conversions for print statements
     max_value = len(edge_points)
+    print("max possible edge points", max_value)
     current_value = current.value
     gripper_polygons = current.gripper_polygons
-    cw_value = current.find_neighbor(10).value
-    ccw_value = current.find_neighbor(-10).value
+    cw = current.find_neighbor(10)
+    ccw = current.find_neighbor(-10)
     current.display(frame)
-    current = current.direction
-
-    # Ensure that all the values are proper
-    # assert current_value <= max_value and current_value >= 0
-    # assert cw_value <= max_value and cw_value >= 0
-    # assert ccw_value <= max_value and ccw_value >= 0
+    
+    # DEBUG PRINTS TO SEE NEIGHBORS AT THE END
+    # cw.display(frame, color=(0, 0, 255))
+    # ccw.display(frame, color=(0, 0, 255))
             
     # Display the number of midpoints, gripper rectangles, and ending arrow
-    print("Final direction: ", current)
-    cv2.arrowedLine(frame, tuple(center), tuple(center + (current * magnitude).astype(int)), (255, 0, 0), 2)
+    print("Final direction: ", current.direction)
+    cv2.arrowedLine(frame, tuple(center), tuple(center + (current.direction * magnitude).astype(int)), (255, 0, 0), 2)
+    # display neighbor directions for debug
+    cv2.arrowedLine(frame, tuple(center), tuple(center + (cw.direction * magnitude).astype(int)), (255, 255, 255), 2)
+    cv2.arrowedLine(frame, tuple(center), tuple(center + (ccw.direction * magnitude).astype(int)), (255, 255, 255), 2)
     
     cv2.putText(frame, f'Midpoints in Rects: {current_value}', (10, 30), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-    cv2.putText(frame, f'Midpoints in cw: {cw_value}', (10, 50), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-    cv2.putText(frame, f'Midpoints in ccw: {ccw_value}', (10, 70), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+    cv2.putText(frame, f'Midpoints in cw: {cw.value}', (10, 50), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+    cv2.putText(frame, f'Midpoints in ccw: {ccw.value}', (10, 70), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
 
 # Add information to quit to frame
 cv2.putText(frame, text="Press any key to quit", org=(0, frame.shape[0] - 10), fontFace=font, fontScale=0.5, color=(0, 0, 255))
