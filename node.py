@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import numpy.typing as npt
 from typing import Annotated, List
-
+from deprecation import deprecated
 from midpoints import find_midpoints_in_polygon
 from raycasting import find_last_intersection
 
@@ -106,13 +106,8 @@ class Node:
         """
         p1, p2 = self.gripper_polygons
         _value = self.get_midpoints_in_node()
-        for edgepoint in self.edgepoints:
-            assert edgepoint[0] >= 0
-            assert edgepoint[1] >= 0
-        return _value - calculate_intersection_area(p1, self.edgepoints) + calculate_intersection_area(p2, self.edgepoints)
-        # new_value = _value - calculate_intersection_area(p1, get_minimum_bounding_box(self.edgepoints)) + calculate_intersection_area(p2, get_minimum_bounding_box(self.edgepoints))
-        assert new_value >= 0 # Assert to ensure that value is never less than 0
-        return new_value
+        assert _value >= 0 # Assert to ensure that value is never less than 0
+        return _value
     
     def find_neighbor(self, angle_in_deg: int) -> 'Node':
         """Finds the neighbor in the given degrees
@@ -147,6 +142,7 @@ class Node:
         ccw_node = self.find_neighbor(angle_in_deg=-angle_in_deg)
 
         max_neighbor = max(self.value, cw_node.value, ccw_node.value)
+        print("checking max of", self.value, cw_node.value, ccw_node.value)
         if max_neighbor > self.value:
             if max_neighbor == cw_node.value:
                 print("moving cw from current:", self.value, " to: ", cw_node.value, ", Where direction current: ", self.direction, ", new direction: ", cw_node.direction)
@@ -157,17 +153,18 @@ class Node:
         print("found max at: ", max_neighbor)
         return self
     
-    def display(self, frame: cv2.typing.MatLike) -> None:
+    def display(self, frame: cv2.typing.MatLike, color: tuple[int, int, int]=(0, 0, 0)) -> None:
         """Displays the gripper to frame
 
         Args:
             frame (cv2.typing.MatLike): The frame to display the gripper to
         """
         p1, p2 = self.gripper_polygons
-        cv2.polylines(frame, [p1], isClosed=True, color=(0, 0, 0), thickness=2)
-        cv2.polylines(frame, [p2], isClosed=True, color=(0, 0, 0), thickness=2)
+        cv2.polylines(frame, [p1], isClosed=True, color=color, thickness=2)
+        cv2.polylines(frame, [p2], isClosed=True, color=color, thickness=2)
 
 @staticmethod
+@deprecated(details="Does not work and is not used, could be used to add another heuristic")
 def calculate_intersection_area(polygon1: npt.NDArray[np.int32], polygon2: npt.NDArray[np.int32]) -> float:
     """Calculate the intersection area between two polygons."""
     try:
@@ -178,6 +175,7 @@ def calculate_intersection_area(polygon1: npt.NDArray[np.int32], polygon2: npt.N
         return 0.0 # Defults to 0.0
 
 @staticmethod
+@deprecated(details="Would be used with caluclate_intersection_area")
 def get_minimum_bounding_box(edge_points: List[Annotated[npt.NDArray[np.int32], (2,)]]) -> Annotated[npt.NDArray[np.int32], (4,)]:
     """Finds the minimum bounding box of all the edge points. 
 
