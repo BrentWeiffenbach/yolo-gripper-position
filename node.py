@@ -50,8 +50,8 @@ class Node:
         """
          
         reversedDirection = -self.direction
-        intersection_one: npt.NDArray[np.float64] = find_last_intersection(center=self.center, direction_pos=self.direction, polygon_points=np.array(self.edgepoints))
-        intersection_two: npt.NDArray[np.float64] = find_last_intersection(center=self.center, direction_pos=reversedDirection, polygon_points=np.array(self.edgepoints))
+        intersection_one: npt.NDArray[np.float32] = find_last_intersection(center=self.center, direction_pos=self.direction, polygon_points=np.array(self.edgepoints))
+        intersection_two: npt.NDArray[np.float32] = find_last_intersection(center=self.center, direction_pos=reversedDirection, polygon_points=np.array(self.edgepoints))
         
         # Calculate the direction vector of the intersection line
         direction_vector_one = intersection_one - self.center
