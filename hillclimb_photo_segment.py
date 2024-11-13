@@ -39,7 +39,7 @@ if results and results[0].masks is not None and results[0].boxes is not None:
     edge_points: List[Annotated[npt.NDArray[np.int32], (2,)]] = [] # Moved to outside of loop to ensure edge_points is not Unbound
     
     # TODO: Turn this into a function to improve the readability
-    for mask, cls in zip(masks, clss):
+    for mask, cls in zip(np.array(masks), clss):
         color = colors(int(cls), True)
         txt_color = annotator.get_txt_color(color)
 
