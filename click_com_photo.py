@@ -101,7 +101,7 @@ if results and results[0].masks is not None and results[0].boxes is not None:
             cv2.circle(frame, tuple(center), 5, (255, 0, 0), -1)
             
             # Hill climb to best gripper pose by drawing a line from the center of mass to the polygon edge
-            closest_point = find_closest_intersection(center=center, polygon_points=np.array(edge_points), frame=frame)
+            closest_point = find_closest_intersection(center=center, polygon_points=np.array(edge_points))
             magnitude = np.linalg.norm(closest_point - center)
             
             # normalize initial
