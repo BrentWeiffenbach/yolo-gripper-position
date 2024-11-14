@@ -33,7 +33,7 @@ class Node:
         self.value: float = self.calculate_value()
 
     def rotate(self, angle_in_deg: int) -> npt.NDArray[np.float32]:
-        radians = angle_in_deg * np.pi / 180
+        radians = -angle_in_deg * np.pi / 180
 
         rotation_matrix = np.array([[np.cos(radians), np.sin(radians)],
                                     [-np.sin(radians), np.cos(radians)]],
@@ -129,7 +129,7 @@ class Node:
         
         return Node(direction=direction, center=self.center, edgepoints=self.edgepoints)
 
-    def compare_neighbor(self, angle_in_deg: int=10) -> 'Node':
+    def compare_neighbor(self, angle_in_deg: int=5) -> 'Node':
         """Compares the clockwise and counter clockwise neighbors to thise node
 
         Args:
@@ -143,7 +143,7 @@ class Node:
 
         max_neighbor = max(self.value, cw_node.value, ccw_node.value)
         print("checking max of", self.value, cw_node.value, ccw_node.value)
-        if max_neighbor > self.value:
+        if max_neighbor >= self.value:
             if max_neighbor == cw_node.value:
                 print("moving cw from current:", self.value, " to: ", cw_node.value, ", Where direction current: ", self.direction, ", new direction: ", cw_node.direction)
                 return cw_node

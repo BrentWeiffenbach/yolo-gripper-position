@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 import numpy.typing as npt
 from typing import Annotated, Optional, List
@@ -59,12 +60,12 @@ def find_last_intersection(center: Annotated[npt.NDArray[np.int32], (2,)], direc
         return intersections[np.argmax(distances)]
     # found no intersection
     print("found no intersection")
-    return direction_pos
+    return direction_pos.astype(np.float64)
 
 def find_closest_intersection(center: np.ndarray, polygon_points: np.ndarray) -> np.ndarray:
     # init inersections
     intersections: List[np.ndarray] = []
-    distances: List[np.ndarray] = []
+    distances: List[float] = []
     
     # loop through polygon points to find every intersection
     for i in range(len(polygon_points)):
@@ -73,8 +74,16 @@ def find_closest_intersection(center: np.ndarray, polygon_points: np.ndarray) ->
         ray_direction = polygon_points[i] - center
         intersection = intersect(center, ray_direction, segment_start, segment_end)
         if intersection is not None:
+            # print("found intersection at", intersection)=-1)
             distance = np.linalg.norm(intersection - center)
-            distances.append(distance.astype(int))
+            distance = float(distance)
+            distances.append(distance)
+            # print("distance is", distance)
             intersections.append(intersection)
-            
-    return intersections[np.argmin(distances)]
+    if intersections:
+        min_distance_index = np.argmin(distances)
+        min_distance = distances[min_distance_index]
+        closest_intersection = intersections[min_distance_index]
+        print(f"Lowest distance: {min_distance}, Intersection point: {closest_intersection}")
+        return closest_intersection
+    return np.ndarray([])

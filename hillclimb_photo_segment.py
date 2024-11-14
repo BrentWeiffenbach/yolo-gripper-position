@@ -19,7 +19,7 @@ setup_yolo(model_name)
 model: Model = YOLO(model_name)
 
 # Load the image
-image_path = 'pen.jpg'
+image_path = 'bottle.jpg'
 image_path = os.path.abspath(image_path)
 frame = cv2.imread(image_path)
 if frame is None:
@@ -39,7 +39,7 @@ def get_edge_points(frame: cv2.typing.MatLike, annotator: Annotator, clss: List,
         List[NDArray[int32]]: The edge points of the masks
     """
     edge_points: List[Annotated[npt.NDArray[np.int32], (2,)]] = []
-    for mask, cls in zip(np.array(masks), clss):
+    for mask, cls in zip(masks, clss):
         color = colors(int(cls), True)
         txt_color = annotator.get_txt_color(color)
 
@@ -92,13 +92,12 @@ if results and results[0].masks is not None and results[0].boxes is not None:
 
     # Draw the center of mass
     cv2.circle(frame, tuple(center), 5, (255, 0, 0), -1)
-    
     # Hill climb to best gripper pose by drawing a line from the center of mass to the polygon edge
-    initial = find_closest_intersection(center=center, polygon_points=np.array(edge_points))
-    magnitude = np.linalg.norm(initial - center)
+    closest_point = find_closest_intersection(center=center, polygon_points=np.array(edge_points))
+    magnitude = np.linalg.norm(closest_point - center)
     
     # normalize initial
-    initial = initial / np.linalg.norm(initial)
+    initial = (closest_point - center) / magnitude
     print("Initial Directions:", initial)
 
     # draw initial direction in gray
