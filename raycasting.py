@@ -33,7 +33,7 @@ def intersect(ray_origin: np.ndarray, ray_direction: np.ndarray, segment_start: 
         return ray_origin + t1 * ray_direction
     return None
 
-def find_last_intersection(center: Annotated[npt.NDArray[np.int32], (2,)], direction_pos: Annotated[npt.NDArray[np.float32], (2,)], polygon_points: npt.NDArray[np.int32]) -> npt.NDArray[np.float64]:
+def find_last_intersection(center: Annotated[npt.NDArray[np.int32], (2,)], direction_pos: Annotated[npt.NDArray[np.float32], (2,)], polygon_points: npt.NDArray[np.int32]) -> npt.NDArray[np.float32]:
     """
     Finds last intersection point along ray on polygon
     
