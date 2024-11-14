@@ -14,7 +14,7 @@ def setup_yolo(model_name):
     # Check if model exists
     if not os.path.isfile(model_name):
         print(f'{model_name} does not exist. Downloading...')
-        download_url = 'https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n-seg.pt'
+        download_url = f'https://github.com/ultralytics/assets/releases/download/v8.3.0/{model_name}'
         response = requests.get(download_url)
 
         if response.status_code == 200:

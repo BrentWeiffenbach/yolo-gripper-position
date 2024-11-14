@@ -142,15 +142,15 @@ class Node:
         ccw_node = self.find_neighbor(angle_in_deg=-angle_in_deg)
 
         max_neighbor = max(self.value, cw_node.value, ccw_node.value)
-        print("checking max of", self.value, cw_node.value, ccw_node.value)
+        # print("checking max of", self.value, cw_node.value, ccw_node.value)
         if max_neighbor >= self.value:
             if max_neighbor == cw_node.value:
-                print("moving cw from current:", self.value, " to: ", cw_node.value, ", Where direction current: ", self.direction, ", new direction: ", cw_node.direction)
+                # print("moving cw from current:", self.value, " to: ", cw_node.value, ", Where direction current: ", self.direction, ", new direction: ", cw_node.direction)
                 return cw_node
             if max_neighbor == ccw_node.value:
-                print("moving ccw from current:", self.value, " to: ", ccw_node.value, ", Where direction current: ", self.direction, ", new direction: ", ccw_node.direction)
+                # print("moving ccw from current:", self.value, " to: ", ccw_node.value, ", Where direction current: ", self.direction, ", new direction: ", ccw_node.direction)
                 return ccw_node
-        print("found max at: ", max_neighbor)
+        # print("found max at: ", max_neighbor)
         return self
     
     def display(self, frame: cv2.typing.MatLike, color: tuple[int, int, int]=(0, 0, 0)) -> None:

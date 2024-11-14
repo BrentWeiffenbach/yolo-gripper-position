@@ -59,7 +59,7 @@ def find_last_intersection(center: Annotated[npt.NDArray[np.int32], (2,)], direc
         distances = [np.linalg.norm(point - center) for point in intersections]
         return intersections[np.argmax(distances)]
     # found no intersection
-    print("found no intersection")
+    # print("found no intersection")
     return np.ndarray([])
 
 def find_closest_intersection(center: np.ndarray, polygon_points: np.ndarray) -> np.ndarray:
@@ -84,6 +84,6 @@ def find_closest_intersection(center: np.ndarray, polygon_points: np.ndarray) ->
         min_distance_index = np.argmin(distances)
         min_distance = distances[min_distance_index]
         closest_intersection = intersections[min_distance_index]
-        print(f"Lowest distance: {min_distance}, Intersection point: {closest_intersection}")
+        # print(f"Lowest distance: {min_distance}, Intersection point: {closest_intersection}")
         return closest_intersection
     return np.ndarray([])
