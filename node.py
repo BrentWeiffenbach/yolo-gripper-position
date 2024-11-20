@@ -9,7 +9,7 @@ from raycasting import find_last_intersection
 class Node:
     # Define the rectangle size
     RECT_WIDTH = 60
-    RECT_HEIGHT = 10
+    RECT_HEIGHT = 4
     
     def __init__(self, direction: Annotated[npt.NDArray[np.float32], (2,)], center: Annotated[npt.NDArray[np.int32], (2,)], edgepoints: List[npt.NDArray[np.int32]]):
         """Constructor for Node
@@ -143,7 +143,7 @@ class Node:
 
         max_neighbor = max(self.value, cw_node.value, ccw_node.value)
         # print("checking max of", self.value, cw_node.value, ccw_node.value)
-        if max_neighbor >= self.value:
+        if max_neighbor > self.value:
             if max_neighbor == cw_node.value:
                 # print("moving cw from current:", self.value, " to: ", cw_node.value, ", Where direction current: ", self.direction, ", new direction: ", cw_node.direction)
                 return cw_node
@@ -153,7 +153,7 @@ class Node:
         # print("found max at: ", max_neighbor)
         return self
     
-    def display(self, frame: cv2.typing.MatLike, color: tuple[int, int, int]=(0, 0, 0)) -> None:
+    def display(self, frame: cv2.typing.MatLike, color: tuple[int, int, int]=(0, 255, 255)) -> None:
         """Displays the gripper to frame
 
         Args:

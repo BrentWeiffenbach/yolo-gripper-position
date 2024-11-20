@@ -20,6 +20,8 @@ setup_yolo(model_name)
 # Load the YOLO model
 model: Model = YOLO(model_name)
 font = cv2.FONT_HERSHEY_SIMPLEX
+# person, frisbee, sports ball, bottle, cup, fork, knife, spoon, banana, apple, orange, carrot, mouse, remote, cell phone, book, vase, scissors, toothbrush
+TRACKED_CLASSES = [0, 29, 39, 41, 42, 43, 44, 46, 47, 49, 51, 64, 65, 67, 73, 75, 76, 79]
 
 # Ask user if it should use a video file or webcam
 print("Would you like to grab objects on webcam, video, or a photo file?")
@@ -64,10 +66,18 @@ if setup_type == 'video' or setup_type == 'photo':
     if file_path and setup_type == 'photo':
         # read photo from file
         frame = cv2.imread(file_path)
-        results: List[Results] = model(frame)
+        # results: List[Results] = model(frame)
+        results = model.track(frame, classes=TRACKED_CLASSES)
         hill_climb(results, frame)
         # Add information to quit to frame
         cv2.putText(frame, text="Press any key to quit", org=(0, frame.shape[0] - 10), fontFace=font, fontScale=0.5, color=(0, 0, 255))
+        
+        # display class info in bottom right
+        detected_classes = []
+        if results[0].boxes is not None:
+            detected_classes = [model.names[int(cls)] for cls in results[0].boxes.cls]
+        class_text = ', '.join(detected_classes)
+        cv2.putText(frame, text=f"Detected: {class_text}", org=(frame.shape[0], frame.shape[0] - 10), fontFace=font, fontScale=0.5, color=(0, 0, 255), thickness=1)
 
         # Display the annotated frame
         cv2.imshow("YOLO Inference", frame)
@@ -84,10 +94,22 @@ while cap.isOpened():
     # Read a frame from the video
     success, frame = cap.read()
     if success:
-        frame = cv2.resize(frame, (640, 640))
+        # frame = cv2.resize(frame, (640, 640))
+        frame = frame[:-100, :]  # Crop the bottom 30 pixels
         # Run YOLO inference on the frame
-        results: List[Results] = model(frame)
+        # results: List[Results] = model(frame)
+        results = model.track(frame, classes=TRACKED_CLASSES)
         hill_climb(results, frame)
+        cv2.putText(frame, text="Press q to quit", org=(0, frame.shape[0] - 10), fontFace=font, fontScale=0.5, color=(0, 0, 255))
+        if setup_type == 'webcam':
+            cv2.putText(frame, text="Press c to switch webcam source", org=(0, frame.shape[0] - 30), fontFace=font, fontScale=0.5, color=(0, 0, 255))
+            
+        # display class info in bottom right
+        detected_classes = []
+        if results[0].boxes is not None:
+            detected_classes = [model.names[int(cls)] for cls in results[0].boxes.cls]
+        class_text = ', '.join(detected_classes)
+        cv2.putText(frame, text=f"Detected: {class_text}", org=(0, frame.shape[0] - 50), fontFace=font, fontScale=0.5, color=(0, 0, 255), thickness=1)
     
     cv2.imshow("Gripper", frame)
 

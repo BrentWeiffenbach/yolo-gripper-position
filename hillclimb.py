@@ -108,6 +108,7 @@ def hill_climb(results: List[Results], frame: cv2.typing.MatLike):
     cv2.arrowedLine(frame, tuple(center), tuple(center + (initial * magnitude).astype(int)), (100, 100, 100), 2)
     # current = initial
     current = Node(direction=initial, center=center, edgepoints=edge_points)
+    # print("intial: ", current.calculate_value())
     i = 0
     # Hill climb to best value for gripper position
     prev_direction = None
@@ -115,9 +116,9 @@ def hill_climb(results: List[Results], frame: cv2.typing.MatLike):
         i += 1
         # print("runs:", i) # DEBUG
         new_node = current.compare_neighbor()
-        if np.allclose(new_node.direction, current.direction, atol=1e-6) or (prev_direction is not None and np.allclose(new_node.direction, prev_direction, atol=1e-6)):
+        if np.allclose(new_node.direction, current.direction, atol=1e-6): # or (prev_direction is not None and np.allclose(new_node.direction, prev_direction, atol=1e-6)):
             break
-        prev_direction = current.direction
+        # prev_direction = current.direction
         current = new_node
         
     # conversions for print statements
