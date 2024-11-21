@@ -1,38 +1,16 @@
 import cv2
-import os
 import numpy as np
 import numpy.typing as npt
 from typing import Annotated, List
-from ultralytics import YOLO
-from ultralytics.utils.plotting import Annotator, colors
+from ultralytics.utils.plotting import colors
 from ultralytics.engine.results import Results
-from ultralytics.engine.model import Model
 from midpoints import calculate_center_of_mass
 from node import Node
-from yolo_utils.setup_yolo import setup_yolo
 from raycasting import find_closest_intersection
 
-# setup yolo model
-model_name = 'yolo11n-seg.pt'
-setup_yolo(model_name)
-# Load the YOLO model
-model: Model = YOLO(model_name)
-
-# Load the image
-image_path = 'bottle.jpg'
-image_path = os.path.abspath(image_path)
-frame = cv2.imread(image_path)
-if frame is None:
-    print(f"Failed to load image: {image_path}")
-    exit()
-
 font = cv2.FONT_HERSHEY_SIMPLEX
-# Process the image
-results: List[Results] = model(frame)
-result = results[0]
-annotator = Annotator(frame, line_width=2)
 
-def get_edge_points(frame: cv2.typing.MatLike, annotator: Annotator, clss: List, masks: npt.NDArray[np.float32]) -> List[Annotated[npt.NDArray[np.int32], (2,)]]:
+def get_edge_points(frame: cv2.typing.MatLike, clss: List, masks: npt.NDArray[np.float32]) -> List[Annotated[npt.NDArray[np.int32], (2,)]]:
     """Gets the edge points of a given frame
 
     Returns:
@@ -41,7 +19,6 @@ def get_edge_points(frame: cv2.typing.MatLike, annotator: Annotator, clss: List,
     edge_points: List[Annotated[npt.NDArray[np.int32], (2,)]] = []
     for mask, cls in zip(masks, clss):
         color = colors(int(cls), True)
-        txt_color = annotator.get_txt_color(color)
 
         # Convert the mask to integer points
         mask: npt.NDArray[np.int32] = np.array(mask, dtype=np.int32)
@@ -90,7 +67,7 @@ def hill_climb(results: List[Results], frame: cv2.typing.MatLike):
     clss = results[0].boxes.cls.tolist()
     masks = np.array(results[0].masks[0].xy) # This is actually a NDArray[NDArray[NDArray[float32]]]
 
-    edge_points: List[Annotated[npt.NDArray[np.int32], (2,)]] = get_edge_points(frame, annotator, clss, masks)
+    edge_points: List[Annotated[npt.NDArray[np.int32], (2,)]] = get_edge_points(frame, clss, masks)
     
     center = calculate_center_of_mass(edge_points=edge_points)
 
@@ -122,12 +99,12 @@ def hill_climb(results: List[Results], frame: cv2.typing.MatLike):
         current = new_node
         
     # conversions for print statements
-    max_value = len(edge_points)
+    # max_value = len(edge_points)
     # print("max possible edge points", max_value) #DEBUG
     current_value = current.value
-    gripper_polygons = current.gripper_polygons
-    cw = current.find_neighbor(10)
-    ccw = current.find_neighbor(-10)
+    # gripper_polygons = current.gripper_polygons
+    # cw = current.find_neighbor(10)
+    # ccw = current.find_neighbor(-10)
     current.display(frame)
     
     # DEBUG PRINTS TO SEE NEIGHBORS AT THE END

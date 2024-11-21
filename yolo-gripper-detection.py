@@ -1,17 +1,10 @@
 import cv2
 import os
-import numpy as np
-import numpy.typing as npt
-from typing import Annotated, List
+from pyinstrument import Profiler
 from ultralytics import YOLO
-from ultralytics.utils.plotting import Annotator, colors
-from ultralytics.engine.results import Results
 from ultralytics.engine.model import Model
-from midpoints import calculate_center_of_mass
-from node import Node
 from yolo_utils.setup_yolo import setup_yolo
-from raycasting import find_closest_intersection
-from typing import List, Literal
+from typing import Literal
 from hillclimb import hill_climb
 
 camera_source: Literal[0] | Literal[1] = 0
@@ -28,6 +21,9 @@ print("Would you like to grab objects on webcam, video, or a photo file?")
 while True:
     setup_type = input("Enter 'webcam', 'video', or 'photo': ").strip().lower()
     if setup_type in ['webcam', 'video', 'photo']:
+        break
+    if not setup_type:
+        setup_type = 'webcam' # Default to webcam
         break
     else:
         print("Invalid input. Please enter 'webcam', 'video', or 'photo'")
@@ -89,6 +85,9 @@ if setup_type == 'video' or setup_type == 'photo':
 if setup_type == 'webcam':
     # capture picture
     cap = cv2.VideoCapture(camera_source)
+
+profiler = Profiler()
+profiler.start()
 # Loop through the video frames
 while cap.isOpened():
     # Read a frame from the video
@@ -125,4 +124,6 @@ while cap.isOpened():
         camera_source = 1 - camera_source # type: ignore
         cap = cv2.VideoCapture(camera_source)
 
+profiler.stop()
+profiler.print()
 cv2.destroyAllWindows()
