@@ -42,7 +42,7 @@ def find_midpoints_in_polygon(polygon: npt.ArrayLike, midpoints: npt.ArrayLike):
     
     # Number of midpoints within the rectangle
     # Check if midpoints are within the rectangles
-    midpoints_within_polygon = sum(cv2.pointPolygonTest(contour=polygon, pt=(float(midpoint[0]), float(midpoint[1])), measureDist=False) >= 0 for midpoint in midpoints)
+    midpoints_within_polygon = sum(cv2.pointPolygonTest(contour=polygon, pt=(float(midpoint[0]), float(midpoint[1])), measureDist=False) >= 0 for midpoint in midpoints) # type: ignore
     assert midpoints_within_polygon >= 0
     return midpoints_within_polygon
 

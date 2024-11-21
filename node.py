@@ -22,8 +22,6 @@ class Node:
 
         self.direction = direction
         self.center = center
-        # Removed this code from the typedef of edgepoints:
-        # | list[tuple[np.int32, np.int32]]
         self.edgepoints = edgepoints
 
         # Calculate the gripper's polygons
@@ -104,7 +102,6 @@ class Node:
         Returns:
             float: number of midpoints - (intersection area of gripper_polygons[0] + intersection area of gripper_polygons[1])
         """
-        p1, p2 = self.gripper_polygons
         _value = self.get_midpoints_in_node()
         assert _value >= 0 # Assert to ensure that value is never less than 0
         return _value
@@ -125,7 +122,6 @@ class Node:
             Node
         """
         direction = self.rotate(angle_in_deg)
-        # print(type(direction[0]))
         
         return Node(direction=direction, center=self.center, edgepoints=self.edgepoints)
 
@@ -142,15 +138,11 @@ class Node:
         ccw_node = self.find_neighbor(angle_in_deg=-angle_in_deg)
 
         max_neighbor = max(self.value, cw_node.value, ccw_node.value)
-        # print("checking max of", self.value, cw_node.value, ccw_node.value)
         if max_neighbor > self.value:
             if max_neighbor == cw_node.value:
-                # print("moving cw from current:", self.value, " to: ", cw_node.value, ", Where direction current: ", self.direction, ", new direction: ", cw_node.direction)
                 return cw_node
             if max_neighbor == ccw_node.value:
-                # print("moving ccw from current:", self.value, " to: ", ccw_node.value, ", Where direction current: ", self.direction, ", new direction: ", ccw_node.direction)
                 return ccw_node
-        # print("found max at: ", max_neighbor)
         return self
     
     def display(self, frame: cv2.typing.MatLike, color: tuple[int, int, int]=(0, 255, 255)) -> None:

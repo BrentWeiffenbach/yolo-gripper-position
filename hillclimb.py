@@ -79,46 +79,26 @@ def hill_climb(results: List[Results], frame: cv2.typing.MatLike):
     
     # normalize initial
     initial = (closest_point - center) / magnitude
-    # print("Initial Directions:", initial) #DEBUG
 
     # draw initial direction in gray
     cv2.arrowedLine(frame, tuple(center), tuple(center + (initial * magnitude).astype(int)), (100, 100, 100), 2)
-    # current = initial
     current = Node(direction=initial, center=center, edgepoints=edge_points)
-    # print("intial: ", current.calculate_value())
     i = 0
     # Hill climb to best value for gripper position
     prev_direction = None
     while True:
         i += 1
-        # print("runs:", i) # DEBUG
         new_node = current.compare_neighbor()
         if np.allclose(new_node.direction, current.direction, atol=1e-6): # or (prev_direction is not None and np.allclose(new_node.direction, prev_direction, atol=1e-6)):
             break
-        # prev_direction = current.direction
         current = new_node
         
     # conversions for print statements
-    # max_value = len(edge_points)
-    # print("max possible edge points", max_value) #DEBUG
     current_value = current.value
-    # gripper_polygons = current.gripper_polygons
-    # cw = current.find_neighbor(10)
-    # ccw = current.find_neighbor(-10)
     current.display(frame)
-    
-    # DEBUG PRINTS TO SEE NEIGHBORS AT THE END
-    # cw.display(frame, color=(0, 0, 255))
-    # ccw.display(frame, color=(0, 0, 255))
+
             
     # Display the number of midpoints, gripper rectangles, and ending arrow
-    # print("Final direction: ", current.direction) #DEBUG
     cv2.arrowedLine(frame, tuple(center), tuple(center + (current.direction * magnitude).astype(int)), (255, 0, 0), 2)
-    # display neighbor directions for debug
-    # cv2.arrowedLine(frame, tuple(center), tuple(center + (cw.direction * magnitude).astype(int)), (255, 255, 255), 2)
-    # cv2.arrowedLine(frame, tuple(center), tuple(center + (ccw.direction * magnitude).astype(int)), (255, 255, 255), 2)
     
     cv2.putText(frame, f'Midpoints in Rects: {current_value}', (10, 30), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-    # DEBUGS:
-    # cv2.putText(frame, f'Midpoints in cw: {cw.value}', (10, 50), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-    # cv2.putText(frame, f'Midpoints in ccw: {ccw.value}', (10, 70), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)

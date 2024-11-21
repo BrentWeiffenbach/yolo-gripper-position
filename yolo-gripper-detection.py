@@ -1,6 +1,5 @@
 import cv2
 import os
-from pyinstrument import Profiler
 from ultralytics import YOLO
 from ultralytics.engine.model import Model
 from yolo_utils.setup_yolo import setup_yolo
@@ -14,7 +13,7 @@ setup_yolo(model_name)
 model: Model = YOLO(model_name)
 font = cv2.FONT_HERSHEY_SIMPLEX
 # person, frisbee, sports ball, bottle, cup, fork, knife, spoon, banana, apple, orange, carrot, mouse, remote, cell phone, book, vase, scissors, toothbrush
-TRACKED_CLASSES = [0, 29, 39, 41, 42, 43, 44, 46, 47, 49, 51, 64, 65, 67, 73, 75, 76, 79]
+TRACKED_CLASSES = [29, 39, 41, 42, 43, 44, 46, 47, 49, 51, 64, 65, 67, 73, 75, 76, 79]
 
 # Ask user if it should use a video file or webcam
 print("Would you like to grab objects on webcam, video, or a photo file?")
@@ -62,7 +61,6 @@ if setup_type == 'video' or setup_type == 'photo':
     if file_path and setup_type == 'photo':
         # read photo from file
         frame = cv2.imread(file_path)
-        # results: List[Results] = model(frame)
         results = model.track(frame, classes=TRACKED_CLASSES)
         hill_climb(results, frame)
         # Add information to quit to frame
@@ -86,17 +84,14 @@ if setup_type == 'webcam':
     # capture picture
     cap = cv2.VideoCapture(camera_source)
 
-profiler = Profiler()
-profiler.start()
 # Loop through the video frames
 while cap.isOpened():
     # Read a frame from the video
     success, frame = cap.read()
     if success:
         # frame = cv2.resize(frame, (640, 640))
-        frame = frame[:-100, :]  # Crop the bottom 30 pixels
+        # frame = frame[:-100, :]  # Crop the bottom 30 pixels
         # Run YOLO inference on the frame
-        # results: List[Results] = model(frame)
         results = model.track(frame, classes=TRACKED_CLASSES)
         hill_climb(results, frame)
         cv2.putText(frame, text="Press q to quit", org=(0, frame.shape[0] - 10), fontFace=font, fontScale=0.5, color=(0, 0, 255))
@@ -119,11 +114,10 @@ while cap.isOpened():
     if key == ord("q"):
         break # TODO: Check if it is a video before showing this
 
-    # Switch camera if 'c' is pressed
-    if key & 0xFF == ord("c"):
-        camera_source = 1 - camera_source # type: ignore
-        cap = cv2.VideoCapture(camera_source)
+    if setup_type == 'webcam':
+        # Switch camera if 'c' is pressed
+        if key & 0xFF == ord("c"):
+            camera_source = 1 - camera_source # type: ignore
+            cap = cv2.VideoCapture(camera_source)
 
-profiler.stop()
-profiler.print()
 cv2.destroyAllWindows()

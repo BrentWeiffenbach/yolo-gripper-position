@@ -14,9 +14,6 @@ def ray_math(v1, v2, v3):
         return
     t1 = cross2d(v2, v1) / dot
     t2 = np.dot(v1, v3) / dot
-    # if t1 >= 0 and 0 <= t2 <= 1:
-    #     return ray_origin + t1 * ray_direction
-    # return None
     if t1 >= 0 and 0 <= t2 <= 1:
         return t1
 
@@ -34,13 +31,12 @@ def intersect(ray_origin: np.ndarray, ray_direction: np.ndarray, segment_start: 
     Returns:
         Optional[np.ndarray]: Intersection point if ray intersects segment
     """
-    # segment_start = np.array(segment_start)
-    # segment_end = np.array(segment_end)
     v1 = ray_origin - segment_start
     v2 = segment_end - segment_start
     # perpendicular vector to the ray's direction
     v3 = np.array([-ray_direction[1], ray_direction[0]], dtype=np.float64)
-
+    # do math to get t1 or nothing 
+    # t1 is the cross product of v2, v1 / the dot product of v2 and v3
     ray_math_result = ray_math(v1, v2, v3)
     
     return  ray_origin + ray_math_result * ray_direction if ray_math_result is not None else None
@@ -71,7 +67,6 @@ def find_last_intersection(center: Annotated[npt.NDArray[np.int32], (2,)], direc
         distances = [np.linalg.norm(point - center) for point in intersections]
         return intersections[np.argmax(distances)]
     # found no intersection
-    # print("found no intersection")
     return np.ndarray([])
 
 def find_closest_intersection(center: np.ndarray, polygon_points: np.ndarray) -> np.ndarray:
@@ -86,16 +81,12 @@ def find_closest_intersection(center: np.ndarray, polygon_points: np.ndarray) ->
         ray_direction = polygon_points[i] - center
         intersection = intersect(center, ray_direction, segment_start, segment_end)
         if intersection is not None:
-            # print("found intersection at", intersection)=-1)
             distance = np.linalg.norm(intersection - center)
             distance = float(distance)
             distances.append(distance)
-            # print("distance is", distance)
             intersections.append(intersection)
     if intersections:
         min_distance_index = np.argmin(distances)
-        min_distance = distances[min_distance_index]
         closest_intersection = intersections[min_distance_index]
-        # print(f"Lowest distance: {min_distance}, Intersection point: {closest_intersection}")
         return closest_intersection
     return np.ndarray([])
