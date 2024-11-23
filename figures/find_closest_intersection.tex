@@ -1,0 +1,77 @@
+\documentclass{article}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage[linesnumbered,ruled,vlined]{algorithm2e}
+
+\title{Ray Casting Algorithm}
+\author{
+    Beck, Alexander
+    \and
+    Weiffenbach, Brent
+}
+
+%%% Coloring the comment as blue
+\newcommand\mycommfont[1]{\footnotesize\ttfamily\textcolor{blue}{#1}}
+\SetCommentSty{mycommfont}
+\pagenumbering{gobble} % Hide page numbers. Use 'arabic' to turn them back on explicitly
+
+\begin{document}
+\setcounter{algocf}{0} % Explicitly state the Algorithm N: ... counter
+\begin{algorithm}
+\SetKwInput{KwInput}{Input}
+\SetKwInput{KwOutput}{Output}
+\DontPrintSemicolon
+
+\KwInput{
+         $starting\_point$: The point to start casting from\\
+         $polygon\_points$: A list of polygon vertices
+         }
+
+\KwOutput{
+        $closest\_point$:  The closest point coordinates, or an empty list if one was not found
+        }
+
+\KwData{
+        $intersections$: A list of intersections with $closest\_point$ as the origin\\
+        $distances$: A list of distances 
+        }
+
+% Set Function Name
+\SetKwFunction{FCast}{find\_closest\_intersection}
+\SetKwProg{Fn}{Function}{:}{}
+
+\Fn{\FCast{$starting\_point, polygon\_points$}}{
+    $intersections \gets []$
+    \tcp*[h]{Initialize an empty array to hold intersection vertices}\;
+    $distances \gets []$
+    \tcp*[h]{Initialize an empty array to hold distances}\;
+
+    \For{each vertex index \text{i} in $polygon\_points$}{
+        $segment\_start \gets polygon\_points[i]$\;
+        $segment\_end \gets polygon\_points[(i + 1) \%  polygon\_points.length]$\;
+        $ray\_direction \gets polygon\_points[i] - starting\_point$\;
+
+        $\begin{aligned}
+        intersection \gets \text{find\_intersection}(
+        & starting\_point, ray\_direction, \\ 
+        & segment\_start, segment\_end)
+        \end{aligned}$\;
+        \If{$intersection \ne null$}{
+            $distance \gets \frac{intersection -starting\_point}{\lVert intersection - starting\_point \rVert}$
+            \tcp*[h]{Normal of $intersection-starting\_point$}\;
+            $distances.push(distance)$\;
+            $intersections.push(intersection)$\;
+        }
+    }
+    \If{$intersections$ \text{is not empty}}{
+        $min\_distance\_index \gets \min(distances)$\;
+        $closest\_intersection\gets intersections[min\_distance\_index]$\;
+        \Return $closest\_intersection$
+    }
+    \Return $[]$
+    \tcp*[h]{Return empty array if there are no intersections}
+}
+\caption{Finding the closest intersection using ray casting}
+\label{algo:find_closest_intersection}
+\end{algorithm}
+\end{document}

@@ -70,7 +70,16 @@ def find_last_intersection(center: Annotated[npt.NDArray[np.int32], (2,)], direc
     return np.ndarray([])
 
 def find_closest_intersection(center: np.ndarray, polygon_points: np.ndarray) -> np.ndarray:
-    # init inersections
+    """Finds the closest intersection of polygon_points from center using ray casting.
+
+    Args:
+        center (np.ndarray): The center of mass to start the rays from
+        polygon_points (np.ndarray): The polygon points to get the segments from.
+
+    Returns:
+        np.ndarray: The point of closest intersection, or an empty array if there is no intersection.
+    """
+    # init intersections
     intersections: List[np.ndarray] = []
     distances: List[float] = []
     
