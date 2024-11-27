@@ -1,55 +1,56 @@
 import cv2
 import numpy as np
-import numpy.typing as npt
-from typing import Annotated, List
+from numpy import int32, float32
+from numpy.typing import NDArray
+from typing import Annotated, Final
 from deprecation import deprecated
 from midpoints import find_midpoints_in_polygon
 from raycasting import find_last_intersection
 
 class Node:
     # Define the rectangle size
-    RECT_WIDTH = 60
-    RECT_HEIGHT = 4
+    RECT_WIDTH: Final[int] = 60
+    RECT_HEIGHT: Final[int] = 4
     
-    def __init__(self, direction: Annotated[npt.NDArray[np.float32], (2,)], center: Annotated[npt.NDArray[np.int32], (2,)], edgepoints: List[npt.NDArray[np.int32]]):
+    def __init__(self, direction: Annotated[NDArray[float32], (2,)], center: Annotated[NDArray[int32], (2,)], edgepoints: list[NDArray[int32]]) -> None:
         """Constructor for Node
 
         Args:
-            direction (npt.NDArray[np.float32]): Current gripper direction as a unit vector
-            center (npt.NDArray[np.int32]): Center of the gripper
-            edgepoints (List[npt.NDArray[np.int32]]): List of edgepoints to evaluate
+            direction (NDArray[float32]): Current gripper direction as a unit vector
+            center (NDArray[int32]): Center of the gripper
+            edgepoints (list[NDArray[int32]]): list of edgepoints to evaluate
         """
 
         self.direction = direction
         self.center = center
-        self.edgepoints = edgepoints
+        self.edgepoints: list[NDArray[int32]] = edgepoints
 
         # Calculate the gripper's polygons
-        self.gripper_polygons: tuple[npt.NDArray[np.int32], npt.NDArray[np.int32]] = self.calculate_gripper_polygons()
+        self.gripper_polygons: tuple[NDArray[int32], NDArray[int32]] = self.calculate_gripper_polygons()
 
         # Calculate the number of edgepoints within the gripper's polygons
         self.value: float = self.calculate_value()
 
-    def rotate(self, angle_in_deg: int) -> npt.NDArray[np.float32]:
-        radians = -angle_in_deg * np.pi / 180
+    def rotate(self, angle_in_deg: int) -> NDArray[float32]:
+        radians: float = -angle_in_deg * np.pi / 180
 
-        rotation_matrix = np.array([[np.cos(radians), np.sin(radians)],
+        rotation_matrix: NDArray[float32] = np.array([[np.cos(radians), np.sin(radians)],
                                     [-np.sin(radians), np.cos(radians)]],
-                                    dtype=np.float32)
-        neighbor: npt.NDArray[np.float32] = np.dot(rotation_matrix, self.direction)
+                                    dtype=float32)
+        neighbor: NDArray[float32] = np.dot(rotation_matrix, self.direction)
 
         return neighbor / np.linalg.norm(neighbor)
 
-    def gripper_pose(self) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.int32]]:
+    def gripper_pose(self) -> tuple[NDArray[int32], NDArray[int32]]:
         """Calculate the gripper pose based on the node's direction, center, and edge points.
 
         Returns:
-            (tuple[npt.NDArray[np.int32], npt.NDArray[np.int32]]): Two arrays of rectangle corner points representing the gripper pose.
+            (tuple[NDArray[int32], NDArray[int32]]): Two arrays of rectangle corner points representing the gripper pose.
         """
          
         reversedDirection = -self.direction
-        intersection_one: npt.NDArray[np.float32] = find_last_intersection(center=self.center, direction_pos=self.direction, polygon_points=np.array(self.edgepoints))
-        intersection_two: npt.NDArray[np.float32] = find_last_intersection(center=self.center, direction_pos=reversedDirection, polygon_points=np.array(self.edgepoints))
+        intersection_one: NDArray[int32] = find_last_intersection(center=self.center, direction_pos=self.direction, polygon_points=np.array(self.edgepoints))
+        intersection_two: NDArray[int32] = find_last_intersection(center=self.center, direction_pos=reversedDirection, polygon_points=np.array(self.edgepoints))
         
         # Calculate the direction vector of the intersection line
         direction_vector_one = intersection_one - self.center
@@ -62,26 +63,26 @@ class Node:
         perpendicular_vector_two = np.array([-direction_vector_two[1], direction_vector_two[0]])
         
         # Calculate the four corners of the rectangle on one vector 
-        rect_points_one = np.array([
+        rect_points_one: NDArray[int32] = np.array([
             intersection_one + self.RECT_WIDTH / 2 * perpendicular_vector_one + self.RECT_HEIGHT / 2 * direction_vector_one,
             intersection_one - self.RECT_WIDTH / 2 * perpendicular_vector_one + self.RECT_HEIGHT / 2 * direction_vector_one,
             intersection_one - self.RECT_WIDTH / 2 * perpendicular_vector_one - self.RECT_HEIGHT / 2 * direction_vector_one,
             intersection_one + self.RECT_WIDTH / 2 * perpendicular_vector_one - self.RECT_HEIGHT / 2 * direction_vector_one
-        ], dtype=np.int32) # MUST be np.int32 or an assertion fails
+        ], dtype=int32) # MUST be int32 or an assertion fails
         
         # Calculate the four corners of the rectangle on two vector
-        rect_points_two = np.array([
+        rect_points_two: NDArray[int32] = np.array([
             intersection_two + self.RECT_WIDTH / 2 * perpendicular_vector_two + self.RECT_HEIGHT / 2 * direction_vector_two,
             intersection_two - self.RECT_WIDTH / 2 * perpendicular_vector_two + self.RECT_HEIGHT / 2 * direction_vector_two,
             intersection_two - self.RECT_WIDTH / 2 * perpendicular_vector_two - self.RECT_HEIGHT / 2 * direction_vector_two,
             intersection_two + self.RECT_WIDTH / 2 * perpendicular_vector_two - self.RECT_HEIGHT / 2 * direction_vector_two
-        ], dtype=np.int32) # MUST be np.int32 or an assertion fails
+        ], dtype=int32) # MUST be int32 or an assertion fails
 
         
         return rect_points_one, rect_points_two
 
 
-    def calculate_gripper_polygons(self) -> tuple[npt.NDArray[np.int32], npt.NDArray[np.int32]]:
+    def calculate_gripper_polygons(self) -> tuple[NDArray[int32], NDArray[int32]]:
         """Calculate the polygons for the gripper at its current position
         """
         return self.gripper_pose()
@@ -102,7 +103,7 @@ class Node:
         Returns:
             float: number of midpoints - (intersection area of gripper_polygons[0] + intersection area of gripper_polygons[1])
         """
-        _value = self.get_midpoints_in_node()
+        _value: int = self.get_midpoints_in_node()
         assert _value >= 0 # Assert to ensure that value is never less than 0
         return _value
     
@@ -134,10 +135,10 @@ class Node:
         Returns:
             Node: The node with the greater value
         """
-        cw_node = self.find_neighbor(angle_in_deg=angle_in_deg)
-        ccw_node = self.find_neighbor(angle_in_deg=-angle_in_deg)
+        cw_node: Node = self.find_neighbor(angle_in_deg=angle_in_deg)
+        ccw_node: Node = self.find_neighbor(angle_in_deg=-angle_in_deg)
 
-        max_neighbor = max(self.value, cw_node.value, ccw_node.value)
+        max_neighbor: float = max(self.value, cw_node.value, ccw_node.value)
         if max_neighbor > self.value:
             if max_neighbor == cw_node.value:
                 return cw_node
@@ -157,10 +158,10 @@ class Node:
 
 @staticmethod
 @deprecated(details="Does not work and is not used, could be used to add another heuristic")
-def calculate_intersection_area(polygon1: npt.NDArray[np.int32], polygon2: npt.NDArray[np.int32]) -> float:
+def calculate_intersection_area(polygon1: NDArray[int32], polygon2: NDArray[int32]) -> float:
     """Calculate the intersection area between two polygons."""
     try:
-        intersection, _ = cv2.intersectConvexConvex(np.array(polygon1, dtype=np.float32), np.array(polygon2, dtype=np.float32))
+        intersection, _ = cv2.intersectConvexConvex(np.array(polygon1, dtype=float32), np.array(polygon2, dtype=float32))
         return intersection
     except Exception as e:
         print("Error trying to calculate the intersection area: ", e)
@@ -168,14 +169,14 @@ def calculate_intersection_area(polygon1: npt.NDArray[np.int32], polygon2: npt.N
 
 @staticmethod
 @deprecated(details="Would be used with caluclate_intersection_area")
-def get_minimum_bounding_box(edge_points: List[Annotated[npt.NDArray[np.int32], (2,)]]) -> Annotated[npt.NDArray[np.int32], (4,)]:
+def get_minimum_bounding_box(edge_points: list[Annotated[NDArray[int32], (2,)]]) -> Annotated[NDArray[int32], (4,)]:
     """Finds the minimum bounding box of all the edge points. 
 
     Args:
-        edge_points (List[npt.NDArray[np.int32]]): The edge points to get the bounding box from.
+        edge_points (list[NDArray[int32]]): The edge points to get the bounding box from.
 
     Returns:
-        npt.NDArray[np.int32]: A bounding box of the edge points. An np array of 4 points.
+        NDArray[int32]: A bounding box of the edge points. An np array of 4 points.
     """
     points = np.array(edge_points)
     min_x, min_y = np.min(points, axis=0)

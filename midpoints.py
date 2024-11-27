@@ -1,33 +1,34 @@
 from typing import Annotated
 from deprecation import deprecated
 import numpy as np
-import numpy.typing as npt
+from numpy import int32
+from numpy.typing import NDArray, ArrayLike
 import cv2
 from raycasting import find_last_intersection
 from numpy.typing import NDArray
 
-def get_midpoints(coordinates: np.ndarray | list[tuple]) -> list[tuple[np.int32, np.int32]]:
+def get_midpoints(coordinates: np.ndarray | list[tuple]) -> list[tuple[int32, int32]]:
     """This function takes a list of coordinates and creates a line between them. It returns the coordinates of the midpoint of said line.
 
     Args:
         coordinates (np.ndarray | list[tuple]): A list of coordinates to get the midpoints from.
 
     Returns:
-        list[tuple[np.int32, np.int32]]: A list of coordinates containing the midpoints of their connecting lines.
+        list[tuple[int32, int32]]: A list of coordinates containing the midpoints of their connecting lines.
     """
-    midpoints: list[tuple[np.int32, np.int32]] = []
+    midpoints: list[tuple[int32, int32]] = []
     
     for i in range(len(coordinates) - 1):
         x1, y1 = coordinates[i]
         x2, y2 = coordinates[i + 1]
         
-        midpoint = (np.int32((x1 + x2) / 2), np.int32((y1 + y2) / 2))
+        midpoint = (int32((x1 + x2) / 2), int32((y1 + y2) / 2))
         midpoints.append(midpoint)
     
     return midpoints[::2] # Halfs the number of midpoints by taking every other one
 
 
-def find_midpoints_in_polygon(polygon: npt.ArrayLike, midpoints: npt.ArrayLike):
+def find_midpoints_in_polygon(polygon: ArrayLike, midpoints: ArrayLike) -> int:
     """
     Determine the number of midpoints that lie within a given polygon.
     Args:
@@ -42,25 +43,25 @@ def find_midpoints_in_polygon(polygon: npt.ArrayLike, midpoints: npt.ArrayLike):
     
     # Number of midpoints within the rectangle
     # Check if midpoints are within the rectangles
-    midpoints_within_polygon = sum(cv2.pointPolygonTest(contour=polygon, pt=(float(midpoint[0]), float(midpoint[1])), measureDist=False) >= 0 for midpoint in midpoints) # type: ignore
+    midpoints_within_polygon: int = sum(cv2.pointPolygonTest(contour=polygon, pt=(float(midpoint[0]), float(midpoint[1])), measureDist=False) >= 0 for midpoint in midpoints) # type: ignore
     assert midpoints_within_polygon >= 0
     return midpoints_within_polygon
 
 @deprecated(details="Use gripper pose in Node instead")
-def gripper_pose(direction: np.ndarray, center: np.ndarray, midpoints: NDArray[np.int32] | list[tuple[np.int32, np.int32]]):
+def gripper_pose(direction: np.ndarray, center: np.ndarray, midpoints: NDArray[int32] | list[tuple[int32, int32]]):
     """
     Calculate the gripper pose based on the given direction, center, and midpoints.
     Args:
         direction (np.ndarray): The direction vector.
         center (np.ndarray): The center point.
-        midpoints (list[tuple[np.int32, np.int32]]): List of midpoint coordinates.
+        midpoints (list[tuple[int32, int32]]): List of midpoint coordinates.
     Returns:
         tuple: Two arrays of rectangle corner points representing the gripper pose.
     """
     
     reversedDirection = -direction
-    intersection_one = find_last_intersection(center=center, direction_pos=direction, polygon_points=np.array(midpoints))
-    intersection_two = find_last_intersection(center=center, direction_pos=reversedDirection, polygon_points=np.array(midpoints))
+    intersection_one: NDArray[int32] = find_last_intersection(center=center, direction_pos=direction, polygon_points=np.array(midpoints))
+    intersection_two: NDArray[int32] = find_last_intersection(center=center, direction_pos=reversedDirection, polygon_points=np.array(midpoints))
     
     # Calculate the direction vector of the intersection line
     direction_vector_one = intersection_one - center
@@ -82,7 +83,7 @@ def gripper_pose(direction: np.ndarray, center: np.ndarray, midpoints: NDArray[n
         intersection_one - rect_width / 2 * perpendicular_vector_one + rect_height / 2 * direction_vector_one,
         intersection_one - rect_width / 2 * perpendicular_vector_one - rect_height / 2 * direction_vector_one,
         intersection_one + rect_width / 2 * perpendicular_vector_one - rect_height / 2 * direction_vector_one
-    ], dtype=np.int32)
+    ], dtype=int32)
     
     # Calculate the four corners of the rectangle on two vector
     rect_points_two = np.array([
@@ -90,34 +91,34 @@ def gripper_pose(direction: np.ndarray, center: np.ndarray, midpoints: NDArray[n
         intersection_two - rect_width / 2 * perpendicular_vector_two + rect_height / 2 * direction_vector_two,
         intersection_two - rect_width / 2 * perpendicular_vector_two - rect_height / 2 * direction_vector_two,
         intersection_two + rect_width / 2 * perpendicular_vector_two - rect_height / 2 * direction_vector_two
-    ], dtype=np.int32)
+    ], dtype=int32)
 
     
     return rect_points_one, rect_points_two
 
 @deprecated(details="Use the display_gripper in Node instead.")
-def display_gripper(polygons, frame):
+def display_gripper(polygons, frame) -> None:
     cv2.polylines(frame, [polygons[0]], isClosed=True, color=(0, 0, 0), thickness=2)
     cv2.polylines(frame, [polygons[1]], isClosed=True, color=(0, 0, 0), thickness=2)
 
-def calculate_center_of_mass(edge_points) -> Annotated[NDArray[np.int32], (2,)]:
+def calculate_center_of_mass(edge_points) -> Annotated[NDArray[int32], (2,)]:
     """Calculates the center of mass using the moments of edge_points
 
     Args:
         edge_points (array-like): The edge_points to get the center of mass from
 
     Returns:
-        npt.NDArray[np.int32]: The center of mass coordinates.
+        NDArray[int32]: The center of mass coordinates.
     
     Examples:
         >>> center = calculate_center_of_mass(edge_points=edge_points)
         >>> cv2.circle(frame, tuple(center), 5, (255, 0, 0), -1) # Draw the center of mass
     """
-    moments = cv2.moments(np.array(edge_points, dtype=np.int32))
+    moments: cv2.typing.Moments = cv2.moments(np.array(edge_points, dtype=int32))
     # Compute the center of mass
     if moments["m00"] != 0:
         cX: int = int(moments["m10"] / moments["m00"])
         cY: int = int(moments["m01"] / moments["m00"])
     else:
         cX, cY = 0, 0
-    return np.array([cX, cY], dtype=np.int32)
+    return np.array([cX, cY], dtype=int32)
