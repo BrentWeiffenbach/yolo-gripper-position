@@ -1,6 +1,6 @@
 import os
 import requests
-def setup_yolo(model_name):
+def setup_yolo(model_name: str) -> None:
     """
     Set up the YOLO model by checking if the specified model file exists.
     If the model file does not exist, it downloads the model from a predefined URL.
@@ -14,8 +14,8 @@ def setup_yolo(model_name):
     # Check if model exists
     if not os.path.isfile(model_name):
         print(f'{model_name} does not exist. Downloading...')
-        download_url = f'https://github.com/ultralytics/assets/releases/download/v8.3.0/{model_name}'
-        response = requests.get(download_url)
+        download_url: str = f'https://github.com/ultralytics/assets/releases/download/v8.3.0/{model_name}'
+        response: requests.Response = requests.get(download_url)
 
         if response.status_code == 200:
             with open(model_name, 'wb') as file:
