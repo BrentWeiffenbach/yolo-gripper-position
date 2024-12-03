@@ -205,6 +205,31 @@ class YoloGripperDetection():
         """
         self.display(path=path)
 
+    @staticmethod
+    def add_detected_to_frame(frame: cv2.typing.MatLike, detected_classes: list[str]) -> cv2.typing.MatLike:
+        class_text: str = ', '.join(detected_classes)
+        cv2.putText(frame, text=f"Detected: {class_text}", org=(0, frame.shape[0] - 50), fontFace=YoloGripperDetection.font, fontScale=0.5, color=(0, 0, 255), thickness=1)
+        return frame
+    
+    @staticmethod
+    def clamp_frame(frame: cv2.typing.MatLike) -> cv2.typing.MatLike:
+        height, width = frame.shape[:2]
+        _MAX_WIDTH: Final[int] = int(1920 * 0.5)
+        _MAX_HEIGHT: Final[int] = int (1080 * 0.5)
+        _width: int = width
+        _height: int = height
+        _ratio: float = width / float(height)
+
+        if width > _MAX_WIDTH:
+            _width = _MAX_WIDTH
+            _height = int(_MAX_WIDTH / _ratio)
+        elif height > _MAX_HEIGHT:
+            _height = _MAX_HEIGHT
+            _width = int(_MAX_WIDTH / _ratio)
+
+        _frame = cv2.resize(frame, (_width, _height))
+        return _frame
+    
     def detect(self, source_frame: cv2.typing.MatLike) -> tuple[list[Results], list[str]]:
         """The core of YoloGripperDetection. Will run the main algorithm on the provided `source_frame` and return the YOLO results and the detected classes.
 
@@ -241,11 +266,10 @@ class YoloGripperDetection():
         frame: cv2.typing.MatLike = cv2.imread(file_path) # TODO: Does not actually check if this is a valid path
         
         results, detected_classes = self.detect(frame)
-        class_text: str = ', '.join(detected_classes)
-        cv2.putText(frame, text=f"Detected: {class_text}", org=(frame.shape[0], frame.shape[0] - 10), fontFace=YoloGripperDetection.font, fontScale=0.5, color=(0, 0, 255), thickness=1)
-
+        
         return frame, detected_classes
     
+
     def video_detection(self, path: str | None = None) -> Generator[tuple[cv2.typing.MatLike, list[str]], None, None]:
         """Detects results on a `cv2.VideoCapture`.
 
@@ -282,9 +306,7 @@ class YoloGripperDetection():
             # frame = cv2.resize(frame, (640, 640))
             # frame = frame[:-100, :]  # Crop the bottom 30 pixels
             results, detected_classes = self.detect(frame)
-            class_text: str = ', '.join(detected_classes)
-            cv2.putText(frame, text=f"Detected: {class_text}", org=(0, frame.shape[0] - 50), fontFace=YoloGripperDetection.font, fontScale=0.5, color=(0, 0, 255), thickness=1)
-            
+            self.add_detected_to_frame(frame=frame, detected_classes=detected_classes)
             yield frame, detected_classes
             
             # Check to see if there is a pressed key
@@ -317,7 +339,9 @@ class YoloGripperDetection():
         assert self.setup_type == "photo"
 
         frame, detected_classes = self.photo_detection(path)
+        frame = self.clamp_frame(frame) # Doesn't no much but it sort of helps
 
+        frame = self.add_detected_to_frame(frame=frame, detected_classes=detected_classes)
         # Add information to quit to frame
         cv2.putText(frame, text="Press any key to quit", org=(0, frame.shape[0] - 10), fontFace=YoloGripperDetection.font, fontScale=0.5, color=(0, 0, 255))
 
@@ -341,7 +365,8 @@ class YoloGripperDetection():
 
             if self.setup_type == 'webcam':
                 cv2.putText(frame, text="Press c to switch webcam source", org=(0, frame.shape[0] - 30), fontFace=YoloGripperDetection.font, fontScale=0.5, color=(0, 0, 255))
-            
+                
+            frame: cv2.typing.MatLike = self.add_detected_to_frame(frame=frame, detected_classes=detected_classes)
             cv2.imshow("Gripper", frame)
         cv2.destroyAllWindows()
 
@@ -372,6 +397,8 @@ class YoloGripperDetection():
             destination_path (str | None, optional): The destination to put the exported photo. Defaults to `source_path`_annotated.jpg.
         """
         frame, detected_classes = self.photo_detection(source_path)
+        # frame = self.clamp_frame(frame)
+        frame: cv2.typing.MatLike = self.add_detected_to_frame(frame=frame, detected_classes=detected_classes)
         cv2.imwrite(filename=destination_path, img=frame)
         print(f"Exported photo to {destination_path}")
     
@@ -387,7 +414,7 @@ class YoloGripperDetection():
         
         if self.setup_type == "video":
             print("Exporting video...")
-        fourcc = cv2.VideoWriter.fourcc(*"mp4v")
+        fourcc: int = cv2.VideoWriter.fourcc(*"mp4v")
         writer: cv2.VideoWriter | None = None
 
         # Get the FPS of the video
@@ -409,6 +436,8 @@ class YoloGripperDetection():
                     height, width = frame.shape[:2]
                     # Writer definition is here to dynamically get the width and height of the video
                     writer = cv2.VideoWriter(filename=destination_path, fourcc=fourcc, fps=_fps, frameSize=(width, height))
+                
+                frame = self.add_detected_to_frame(frame=frame, detected_classes=detected_classes)
                 writer.write(frame)
                 if self.setup_type == "webcam":
                     cv2.imshow("Webcam YOLO Gripper Detection", frame)
