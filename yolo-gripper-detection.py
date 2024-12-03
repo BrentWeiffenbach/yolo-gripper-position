@@ -59,7 +59,7 @@ def check_file_extension_valid(file_path: str, setup_type: Literal["video", "pho
     Returns:
         bool: True if the extension is valid. Will exit the program if it is not.
     """
-    assert (setup_type == "photo" and cv2.haveImageReader(filename=file_path)) or True # Ensure that cv2 can read the file
+    assert (setup_type == "photo" and os.path.exists(path=file_path) and cv2.haveImageReader(filename=file_path)) or True # Ensure that cv2 can read the file
 
     # https://docs.opencv.org/2.4/modules/highgui/doc/reading_and_writing_images_and_video.html?highlight=imread#imread
     SUPPORTED_PHOTO_EXTS: Final[list[str]] = ["bmp", "dib", "jpg", "jpeg", "jpe", "jp2", "png", "pbm", "pgm", "ppm", "sr", "ras", "tiff", "tif"]
@@ -173,11 +173,11 @@ class YoloGripperDetection():
 
         >>> # Ask user for file and export video
         yolo = YoloGripperDetections(setup_type='video')
-        yolo.export(destination_name='example_annotated.mp4')
+        yolo.export(destination_path='example_annotated.mp4')
 
         >>> # Specify file and export photo
         yolo = YoloGripperDetections(setup_type='photo')
-        yolo.export(source_path='example.jpg', destination_name='example_annotated.jpg')
+        yolo.export(source_path='example.jpg', destination_path='example_annotated.jpg')
     """
     MODEL_NAME: Final[str] = 'yolo11s-seg.pt'
     # 0 is person
@@ -364,24 +364,26 @@ class YoloGripperDetection():
         if self.setup_type == "webcam":
             self._display_video()
     
-    def _export_photo(self, source_path: str | None = None, destination_name: str | None = None) -> None:
-        """Exports the photo from `source_path` to `destination_name`. Will ask for user input if `destination_path` is `None`.
+    def _export_photo(self, source_path: str, destination_path: str) -> None:
+        """Exports the photo from `source_path` to `destination_path`. Will ask for user input if `destination_path` is `None`.
 
         Args:
             source_path (str | None, optional): The path to the file to read. `None` will ask user for input. Defauts to `None`.
-            destination_name (str | None, optional): The destination to put the exported photo. Defaults to `source_path`_annotated.jpg.
+            destination_path (str | None, optional): The destination to put the exported photo. Defaults to `source_path`_annotated.jpg.
         """
-        ...
+        frame, detected_classes = self.photo_detection(source_path)
+        cv2.imwrite(filename=destination_path, img=frame)
+        print(f"Exported photo to {destination_path}")
     
-    def _export_video(self, source_path: str, destination_name: str) -> None:
-        """Exports the video from `source_path` (or the webcam if `self.setup_type` is webcam) to `destination_name`.
+    def _export_video(self, source_path: str, destination_path: str) -> None:
+        """Exports the video from `source_path` (or the webcam if `self.setup_type` is webcam) to `destination_path`.
 
         Args:
             source_path (str | None): The path to the file to read. `None` will ask user for input (unless `self.setup_type` is webcam). `None` if `self.setup_type` is webcam.
-            destination_name (str | None): The destination to put the exported video. Defaults to `source_path`_annotated.mp4. If `self.setup_type` is webcam and `destination_name` is None, will default to `webcam_annotated.mp4`.
+            destination_path (str | None): The destination to put the exported video. Defaults to `source_path`_annotated.mp4. If `self.setup_type` is webcam and `destination_path` is None, will default to `webcam_annotated.mp4`.
         """
-        if self.setup_type == "webcam" and not destination_name:
-            destination_name = "webcam_annotated.mp4"
+        if self.setup_type == "webcam" and not destination_path:
+            destination_path = "webcam_annotated.mp4"
         
         if self.setup_type == "video":
             print("Exporting video...")
@@ -406,7 +408,7 @@ class YoloGripperDetection():
                 if writer is None:
                     height, width = frame.shape[:2]
                     # Writer definition is here to dynamically get the width and height of the video
-                    writer = cv2.VideoWriter(filename=destination_name, fourcc=fourcc, fps=_fps, frameSize=(width, height))
+                    writer = cv2.VideoWriter(filename=destination_path, fourcc=fourcc, fps=_fps, frameSize=(width, height))
                 writer.write(frame)
                 if self.setup_type == "webcam":
                     cv2.imshow("Webcam YOLO Gripper Detection", frame)
@@ -419,12 +421,12 @@ class YoloGripperDetection():
                 writer.release()
             cv2.destroyAllWindows()
 
-    def export(self, source_path: str | None = None, destination_name: str | None = None) -> None:
-        """Exports the photo/video from `source_path` (or the webcam if `self.setup_type` is webcam) to `destination_name`.
+    def export(self, source_path: str | None = None, destination_path: str | None = None) -> None:
+        """Exports the photo/video from `source_path` (or the webcam if `self.setup_type` is webcam) to `destination_path`.
 
         Args:
             source_path (str | None): The path to the file to read. `None` will ask user for input (unless `self.setup_type` is webcam). `None` if `self.setup_type` is webcam.
-            destination_name (str | None): The destination to put the exported photo/video. Defaults to `source_path`_annotated.jpg/mp4. If `self.setup_type` is webcam and `destination_name` is None, will default to `webcam_annotated.mp4`.
+            destination_path (str | None): The destination to put the exported photo/video. Defaults to `source_path`_annotated.jpg/mp4. If `self.setup_type` is webcam and `destination_path` is None, will default to `webcam_annotated.mp4`.
         """
         _PHOTO_TYPES: Final[list[str]] = ["photo"]
         _VIDEO_TYPES: Final[list[str]] = ["video", "webcam"]
@@ -434,16 +436,16 @@ class YoloGripperDetection():
         if source_path is None and self.setup_type not in _IGNORE_SOURCE_PATH_TYPES:
             cleaned_source_path = get_file_path(setup_type=self.setup_type)
 
-        cleaned_destination_name: str = destination_name or ""
-        if destination_name is None:
-            cleaned_destination_name = get_destination_path(setup_type=self.setup_type)
+        cleaned_destination_path: str = destination_path or ""
+        if destination_path is None:
+            cleaned_destination_path = get_destination_path(setup_type=self.setup_type)
 
         if self.setup_type in _PHOTO_TYPES:
-            self._export_photo(source_path=cleaned_source_path, destination_name=cleaned_destination_name)
+            self._export_photo(source_path=cleaned_source_path, destination_path=cleaned_destination_path)
         elif self.setup_type in _VIDEO_TYPES:
-            self._export_video(source_path=cleaned_source_path, destination_name=cleaned_destination_name)
+            self._export_video(source_path=cleaned_source_path, destination_path=cleaned_destination_path)
         else:
             sys.exit(f"Unknown setup_type: {self.setup_type}!")
 
-yolo = YoloGripperDetection(setup_type='webcam')
+yolo = YoloGripperDetection(setup_type='photo')
 yolo.export()
