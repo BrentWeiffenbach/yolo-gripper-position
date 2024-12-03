@@ -446,6 +446,3 @@ class YoloGripperDetection():
             self._export_video(source_path=cleaned_source_path, destination_path=cleaned_destination_path)
         else:
             sys.exit(f"Unknown setup_type: {self.setup_type}!")
-
-yolo = YoloGripperDetection(setup_type='photo')
-yolo.export()
