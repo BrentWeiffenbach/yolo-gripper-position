@@ -75,7 +75,7 @@ def get_file_path(setup_type: Literal["video", "photo", "webcam"]) -> str:
     """Gets a file path. Will exit if the file path is not found.
 
     Returns:
-        str: The file path to read from
+        str: The file path to read from, or an empty string if `setup_type` is a webcam
     """
     if setup_type == "webcam":
         return ""
@@ -90,15 +90,13 @@ def get_file_path(setup_type: Literal["video", "photo", "webcam"]) -> str:
         elif setup_type == 'photo':
             file_name = 'example.jpg'
         else:
-            print("Unsupported file type!")
-            exit(1)
+            sys.exit("Unsupported file type!")
     file_path: str = find_file(os.getcwd(), file_name)
     
     # Ensure that the file at file_path exists
     if not os.path.isfile(file_path):
         print(f"Absolute path: {file_path}")
-        print(f"Could not find file: {file_path}")
-        exit(1)
+        sys.exit(f"Could not find file: {file_path}")
     
     assert file_path # Ensure that file_path is not Unknown
     assert check_file_extension_valid(file_path=file_path, setup_type=setup_type)
@@ -146,11 +144,19 @@ class YoloGripperDetection():
         """Calls `display()`.
 
         Args:
-            path (str, optional): The file path to read from. None if it is a webcam. Defaults to None.
+            path (str, optional): The path to the photo/video file, or `None` to prompt the user. Use `None` to indicate webcam as well. Defaults to `None`.
         """
         self.display(path=path)
 
     def detect(self, source_frame: cv2.typing.MatLike) -> tuple[list[Results], list[str]]:
+        """The core of YoloGripperDetection. Will run the main algorithm on the provided `source_frame` and return the YOLO results and the detected classes.
+
+        Args:
+            source_frame (cv2.typing.MatLike): The frame to run the algorithm on.
+
+        Returns:
+            tuple (list[Results], list[str]): The results and detected_classes of `source_frame`.
+        """
         results: list[Results] = YoloGripperDetection.model.track(source_frame, classes=YoloGripperDetection.TRACKED_CLASSES)
         hill_climb(results, source_frame)
         
@@ -184,6 +190,21 @@ class YoloGripperDetection():
         return frame, detected_classes
     
     def video_detection(self, path: str | None = None) -> Generator[tuple[cv2.typing.MatLike, list[str]], None, None]:
+        """Detects results on a `cv2.VideoCapture`.
+
+        Args:
+            path (str | None, optional): The path to the video file, or `None` to prompt the user. Use `None` to indicate webcam as well. Defaults to `None`.
+
+        Yields:
+            Generator (tuple[cv2.typing.MatLike, list[str]], None, None): A Generator with the results of each frame. See the example for how to use the generator.
+
+        Example:
+            ```
+            for frame, detected_classes in self.video_detection(path):
+                cv2.imshow("Gripper", frame)
+            cv2.destroyAllWindows()
+            ```
+        """
         # Ensure only those with a cap are availible at this point
         assert self.setup_type == 'webcam' or self.setup_type == 'video'
         assert (self.setup_type == 'video' and path is not None) or (self.setup_type == 'webcam' and path is None)
@@ -225,7 +246,7 @@ class YoloGripperDetection():
                         
                     cap = cv2.VideoCapture(self.camera_source)
 
-        cap.release()
+        cap.release() # Close the VideoCapture
 
     def __display_photo(self, path: str) -> NoReturn:
         """Displays the photo detected from `photo_detection`.
@@ -250,6 +271,11 @@ class YoloGripperDetection():
         exit(1)
     
     def __display_video(self, path: str | None = None) -> None:
+        """Displays the video to the screen.
+
+        Args:
+            path (str | None, optional): The path to the video file, or `None` to prompt the user. Use `None` to indicate webcam as well. Defaults to `None`.
+        """
         for frame, detected_classes in self.video_detection(path):
             # Display the keybind information
             # Note that this logic is separate from the actual key handling. This is because it needs to change cap.
@@ -263,7 +289,7 @@ class YoloGripperDetection():
         cv2.destroyAllWindows()
 
     def display(self, path: str | None = None) -> None:
-        """Displays the webcam/file at `path`.
+        """Displays the webcam/file located in `path`.
 
         Args:
             path (str, optional): The path to the photo/video to display. Will ask user for input if it is `None`. Defaults to `None`.
