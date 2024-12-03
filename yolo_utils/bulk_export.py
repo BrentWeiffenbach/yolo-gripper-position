@@ -3,7 +3,11 @@ from yolo_gripper_detection import YoloGripperDetection
 
 def get_all_image_paths(directory: str) -> list[str]:
     for _, _, files in os.walk(directory):
-        return files
+        images: list[str] = []
+        for file in files:
+            if file.split(".")[-1] in ["bmp", "dib", "jpg", "jpeg", "jpe", "jp2", "png", "pbm", "pgm", "ppm", "sr", "ras", "tiff", "tif"]:
+                images.append(file)
+        return images
     return []
 
 # Run using:
