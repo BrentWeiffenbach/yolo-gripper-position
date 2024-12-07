@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from numpy import int32, float32
 from numpy.typing import NDArray
-from typing import Annotated
+from typing import Annotated, Final
 from ultralytics.utils.plotting import colors
 from ultralytics.engine.results import Results
 from midpoints import (calculate_center_of_mass, calculate_visual_center_of_polygon)
@@ -110,7 +110,9 @@ def hill_climb(results: list[Results], frame: cv2.typing.MatLike, center_point: 
         
     # conversions for print statements
     current_value: float = current.value
-    if current_value <= 20:
+    VALUE_THRESHOLD: Final[int] = 20 # The threshold to use for ensuring a good gripper position
+    
+    if current_value <= VALUE_THRESHOLD:
         if verbose:
             print("Not optimal. Checking new center. Current value is:", current_value)
         center = get_random_point_in_polygon(np.array(edge_points))

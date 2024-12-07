@@ -65,7 +65,7 @@ def check_file_extension_valid(file_path: str, setup_type: Literal["video", "pho
     # https://docs.opencv.org/2.4/modules/highgui/doc/reading_and_writing_images_and_video.html?highlight=imread#imread
     SUPPORTED_PHOTO_EXTS: Final[list[str]] = ["bmp", "dib", "jpg", "jpeg", "jpe", "jp2", "png", "pbm", "pgm", "ppm", "sr", "ras", "tiff", "tif"]
     # https://fourcc.org/codecs.php
-    SUPPORTED_VIDEO_EXTS: Final[list[str]] = ["mp4", "mp4v"]
+    SUPPORTED_VIDEO_EXTS: Final[list[str]] = ["mp4", "mp4v", "mov"]
 
     _PHOTO_TYPES: Final[list[str]] = ["photo"]
     _VIDEO_TYPES: Final[list[str]] = ["video", "webcam"]
@@ -111,7 +111,7 @@ def ask_user_if_overwrite() -> bool:
     Returns:
         bool: The user's response
     """
-    print(f"Warning: file already exists.")
+    print("Warning: file already exists.")
     _YES_RESPONSES: Final[list[str]] = ["y", "yes"]
     _NO_RESPONSES: Final[list[str]] = ["n", "no"]
     while True:
@@ -214,21 +214,25 @@ class YoloGripperDetection():
     
     @staticmethod
     def clamp_frame(frame: cv2.typing.MatLike) -> cv2.typing.MatLike:
+        width: int
+        height: int
         height, width = frame.shape[:2]
         _MAX_WIDTH: Final[int] = 640
         _MAX_HEIGHT: Final[int] = 640
-        _ratio = min(_MAX_WIDTH / width, _MAX_HEIGHT / height )
+        _ratio: float = min(_MAX_WIDTH / width, _MAX_HEIGHT / height )
 
+        _width: int
+        _height: int
         _width, _height = int(width * _ratio), int(height * _ratio)
 
-        _frame = cv2.resize(frame, (_width, _height), interpolation=cv2.INTER_AREA)
+        _frame: cv2.typing.MatLike = cv2.resize(frame, (_width, _height), interpolation=cv2.INTER_AREA)
         
         # Make a white background canvas
         white_canvas = np.full((_MAX_WIDTH, _MAX_HEIGHT, 3), (255, 255, 255), dtype=np.uint8)
         
         # Calculate the center of the image
-        x_offset = (_MAX_WIDTH - _width) // 2
-        y_offset = (_MAX_HEIGHT - _height) // 2
+        x_offset: int = (_MAX_WIDTH - _width) // 2
+        y_offset: int = (_MAX_HEIGHT - _height) // 2
         
         # Place the resized image on the canvas
         white_canvas[y_offset:y_offset + _height, x_offset:x_offset + _width] = _frame
@@ -245,7 +249,7 @@ class YoloGripperDetection():
             tuple (list[Results], list[str]): The results and detected_classes of `source_frame`.
         """
         results: list[Results] = YoloGripperDetection.model.track(source_frame, classes=YoloGripperDetection.TRACKED_CLASSES)
-        hill_climb(results, source_frame, verbose=True)
+        hill_climb(results, source_frame, verbose=False)
         
         # Get the detected classes
         detected_classes: list[str] = []
@@ -346,7 +350,7 @@ class YoloGripperDetection():
         frame, detected_classes = self.photo_detection(path)
         # frame = self.clamp_frame(frame) # Doesn't no much but it sort of helps
 
-        frame = self.add_detected_to_frame(frame=frame, detected_classes=detected_classes)
+        frame: cv2.typing.MatLike = self.add_detected_to_frame(frame=frame, detected_classes=detected_classes)
         # Add information to quit to frame
         cv2.putText(frame, text="Press any key to quit", org=(0, frame.shape[0] - 10), fontFace=YoloGripperDetection.font, fontScale=0.5, color=(0, 0, 255))
 
