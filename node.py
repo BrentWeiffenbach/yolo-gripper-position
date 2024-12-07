@@ -80,8 +80,18 @@ class Node:
         # Calculate the direction vector of the intersection line
         direction_vector_one = intersection_one - self.center
         direction_vector_two = intersection_two - self.center
-        direction_vector_one = direction_vector_one / np.linalg.norm(direction_vector_one)  # Normalize the vector
-        direction_vector_two = direction_vector_two / np.linalg.norm(direction_vector_two)  # Normalize the vector
+        norm_one = np.linalg.norm(direction_vector_one)
+        norm_two = np.linalg.norm(direction_vector_two)
+        
+        if norm_one != 0:
+            direction_vector_one = direction_vector_one / norm_one  # Normalize the vector
+        else:
+            direction_vector_one = np.zeros_like(direction_vector_one)
+        
+        if norm_two != 0:
+            direction_vector_two = direction_vector_two / norm_two  # Normalize the vector
+        else:
+            direction_vector_two = np.zeros_like(direction_vector_two)
 
         # Calculate the perpendicular vector
         perpendicular_vector_one = np.array([-direction_vector_one[1], direction_vector_one[0]])

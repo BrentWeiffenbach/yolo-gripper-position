@@ -79,7 +79,10 @@ def get_edge_points(frame: cv2.typing.MatLike, clss: list, masks: NDArray[float3
     return edge_points
 
 
-def hill_climb(results: list[Results], frame: cv2.typing.MatLike, center_point: NDArray[int32] | None = None, verbose: bool = False) -> None:
+def hill_climb(results: list[Results], frame: cv2.typing.MatLike, center_point: NDArray[int32] | None = None, verbose: bool = False, depth: int = 0) -> None:
+    depth +=1
+    if depth >= 200:
+        return
     if not results or results[0].masks is None or results[0].boxes is None:
         return
     
@@ -116,7 +119,7 @@ def hill_climb(results: list[Results], frame: cv2.typing.MatLike, center_point: 
         if verbose:
             print("Not optimal. Checking new center. Current value is:", current_value)
         center = get_random_point_in_polygon(np.array(edge_points))
-        return hill_climb(results, frame, center, verbose=verbose)
+        return hill_climb(results, frame, center, verbose=verbose, depth=depth)
     
     valid_gripper_length: bool = current.check_gripper_length(ratio=1.0 / max(frame.shape[0], frame.shape[1]))
     if verbose:
@@ -125,7 +128,7 @@ def hill_climb(results: list[Results], frame: cv2.typing.MatLike, center_point: 
         if verbose:
             print(f"Invalid gripper length. Gripper length: {current.calculate_gripper_length(ratio=1.0 / max(frame.shape[0], frame.shape[1]))}")
         center = get_random_point_in_polygon(np.array(edge_points))
-        return hill_climb(results, frame, center, verbose=verbose)
+        return hill_climb(results, frame, center, verbose=verbose, depth=depth)
     current.display(frame) # Display the gripper polygons on frame
     
     # display the midpoint value
