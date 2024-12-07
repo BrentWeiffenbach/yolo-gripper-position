@@ -12,8 +12,9 @@ def get_all_image_paths(directory: str) -> list[str]:
 
 # Run using:
 # python -m yolo_utils.bulk_export
-root = "figures/figure_comparisons"
+root = r"figures\figure_comparisons"
 image_paths: list[str] = get_all_image_paths(directory=root)
 yolo = YoloGripperDetection(setup_type='photo')
 for image in image_paths:
+    # BUG: If the 'results' folder does not exist, it will not actually export the files
     yolo.export(source_path=os.path.join(root, image), destination_path=os.path.join(os.path.join(root, "results"), image.split('.')[-2] + "_annotated." + image.split(".")[-1]))

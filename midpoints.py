@@ -1,9 +1,11 @@
+from shapely.algorithms.polylabel import polylabel
 from typing import Annotated
 from deprecation import deprecated
 import numpy as np
 from numpy import int32
 from numpy.typing import NDArray, ArrayLike
 import cv2
+from shapely import Polygon
 from raycasting import find_last_intersection
 from numpy.typing import NDArray
 
@@ -122,3 +124,17 @@ def calculate_center_of_mass(edge_points) -> Annotated[NDArray[int32], (2,)]:
     else:
         cX, cY = 0, 0
     return np.array([cX, cY], dtype=int32)
+
+def calculate_visual_center_of_polygon(edge_points) -> Annotated[NDArray[int32], (2,)]:
+    """Finds the visual center of a polygon using the polylable library.
+
+    Args:
+        polygon (array-like): The polygon to find the visual center of. Each point should be a tuple or list of two coordinates (x, y).
+
+    Returns:
+        NDArray[int32]: The visual center coordinates of the polygon.
+    """
+
+    polygon = Polygon(edge_points)
+    label_point = polylabel(polygon)
+    return np.array([int32(label_point.x), int32(label_point.y)], dtype=int32)

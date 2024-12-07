@@ -5,9 +5,27 @@ from numpy.typing import NDArray
 from typing import Annotated
 from ultralytics.utils.plotting import colors
 from ultralytics.engine.results import Results
-from midpoints import calculate_center_of_mass
+from midpoints import (calculate_center_of_mass, calculate_visual_center_of_polygon)
 from node import Node
 from raycasting import find_closest_intersection
+import random
+from shapely.geometry import Point, Polygon
+
+def get_random_point_in_polygon(polygon_points: NDArray[int32]) -> NDArray[int32]:
+    polygon = Polygon(polygon_points)
+    min_x, min_y, max_x, max_y = polygon.bounds
+    while True:
+        # Generate random points along the major x and y axis of the polygon
+        if random.choice([True, False]):
+            random_x = random.uniform(min_x, max_x)
+            random_y = (min_y + max_y) / 2
+        else:
+            random_x = (min_x + max_x) / 2
+            random_y = random.uniform(min_y, max_y)
+        
+        random_point = Point(random_x, random_y)
+        if polygon.contains(random_point):
+            return np.array([int(random_point.x), int(random_point.y)], dtype=int32)
 
 font = cv2.FONT_HERSHEY_SIMPLEX
 
@@ -31,7 +49,7 @@ def get_edge_points(frame: cv2.typing.MatLike, clss: list, masks: NDArray[float3
             end_point: NDArray[np.float64] = mask[(i + 1) % len(mask)]  # Wrap around to the first point
             total_perimeter += np.linalg.norm(start_point - end_point)
 
-        # Define the desired spacing between points
+        # Spacing between points
         SPACING: int = 5
 
         # Interpolate points at regular intervals along the perimeter
@@ -61,7 +79,7 @@ def get_edge_points(frame: cv2.typing.MatLike, clss: list, masks: NDArray[float3
     return edge_points
 
 
-def hill_climb(results: list[Results], frame: cv2.typing.MatLike) -> None:
+def hill_climb(results: list[Results], frame: cv2.typing.MatLike, center_point: NDArray[int32] | None = None, verbose: bool = False) -> None:
     if not results or results[0].masks is None or results[0].boxes is None:
         return
     
@@ -70,19 +88,18 @@ def hill_climb(results: list[Results], frame: cv2.typing.MatLike) -> None:
 
     edge_points: list[Annotated[NDArray[int32], (2,)]] = get_edge_points(frame, clss, masks)
     
-    center: Annotated[NDArray[int32], (2,)] = calculate_center_of_mass(edge_points=edge_points)
-
-    # Draw the center of mass
-    cv2.circle(frame, tuple(center), 5, (255, 0, 0), -1)
+    center_of_mass = calculate_center_of_mass(edge_points=edge_points)
+    if not Polygon(edge_points).contains(Point(center_of_mass)):
+        center_of_mass = calculate_visual_center_of_polygon(edge_points=edge_points)
+    
+    center: Annotated[NDArray[int32], (2,)] = center_point if center_point is not None else center_of_mass
     # Hill climb to best gripper pose by drawing a line from the center of mass to the polygon edge
     closest_point: NDArray[int32] = find_closest_intersection(center=center, polygon_points=np.array(edge_points))
-    magnitude = np.linalg.norm(closest_point - center)
+    magnitude: np.floating = np.linalg.norm(closest_point - center)
     
     # normalize initial
-    initial = (closest_point - center) / magnitude
+    initial: NDArray[np.floating] = (closest_point - center) / magnitude
 
-    # draw initial direction in gray
-    cv2.arrowedLine(frame, tuple(center), tuple(center + (initial * magnitude).astype(int)), (100, 100, 100), 2)
     current = Node(direction=initial, center=center, edgepoints=edge_points)
     # Hill climb to best value for gripper position
     while True:
@@ -93,10 +110,21 @@ def hill_climb(results: list[Results], frame: cv2.typing.MatLike) -> None:
         
     # conversions for print statements
     current_value: float = current.value
-    current.display(frame)
-
-            
-    # Display the number of midpoints, gripper rectangles, and ending arrow
-    cv2.arrowedLine(frame, tuple(center), tuple(center + (current.direction * magnitude).astype(int)), (255, 0, 0), 2)
+    if current_value <= 20:
+        if verbose:
+            print("Not optimal. Checking new center. Current value is:", current_value)
+        center = get_random_point_in_polygon(np.array(edge_points))
+        return hill_climb(results, frame, center, verbose=verbose)
     
+    valid_gripper_length: bool = current.check_gripper_length(ratio=1.0 / max(frame.shape[0], frame.shape[1]))
+    if verbose:
+        (f"Valid gripper length: {valid_gripper_length}") # height, width
+    if not valid_gripper_length:
+        if verbose:
+            print(f"Invalid gripper length. Gripper length: {current.calculate_gripper_length(ratio=1.0 / max(frame.shape[0], frame.shape[1]))}")
+        center = get_random_point_in_polygon(np.array(edge_points))
+        return hill_climb(results, frame, center, verbose=verbose)
+    current.display(frame) # Display the gripper polygons on frame
+    
+    # display the midpoint value
     cv2.putText(frame, f'Midpoints in Rects: {current_value}', (10, 30), font, 0.5, (0, 0, 0), 1, cv2.LINE_AA)

@@ -1,6 +1,7 @@
 import sys
 import cv2
 import os
+import numpy as np
 from ultralytics import YOLO
 from ultralytics.engine.model import Model
 from ultralytics.engine.model import Results
@@ -181,15 +182,15 @@ class YoloGripperDetection():
     """
     MODEL_NAME: Final[str] = 'yolo11s-seg.pt'
     # 0 is person
-    # frisbee, sports ball, bottle, cup, fork, knife, spoon, banana, apple, orange, carrot, mouse, remote, cell phone, book, vase, scissors, toothbrush
-    TRACKED_CLASSES: Final[list[int]] = [29, 39, 41, 42, 43, 44, 46, 47, 49, 51, 64, 65, 67, 73, 75, 76, 79]
+    # fork 42, knife 43, mouse 64, cell phone 67, scissors 76, teddy bear 77, toothbrush 79
+    TRACKED_CLASSES: Final[list[int]] = [42, 43, 64, 67, 76, 77, 79]
 
     font: int = cv2.FONT_HERSHEY_SIMPLEX
     setup_yolo(MODEL_NAME) # Download YOLO if it doesn't exist
     model: Model = YOLO(MODEL_NAME)
 
-    def __init__(self, setup_type: Literal['webcam', 'video', 'photo']) -> None:
-        self.setup_type: Literal['webcam', 'video', 'photo'] = setup_type
+    def __init__(self, setup_type: Literal['webcam', 'video', 'photo'] | None = None) -> None:
+        self.setup_type: Literal['webcam', 'video', 'photo'] = setup_type or get_setup_type()
 
         # Ensure that setup_type is a valid type
         if self.setup_type not in ['webcam', 'video', 'photo']:
@@ -208,27 +209,31 @@ class YoloGripperDetection():
     @staticmethod
     def add_detected_to_frame(frame: cv2.typing.MatLike, detected_classes: list[str]) -> cv2.typing.MatLike:
         class_text: str = ', '.join(detected_classes)
-        cv2.putText(frame, text=f"Detected: {class_text}", org=(0, frame.shape[0] - 50), fontFace=YoloGripperDetection.font, fontScale=0.5, color=(0, 0, 255), thickness=1)
+        cv2.putText(frame, text=f"Detected: {class_text}", org=(10, 70), fontFace=YoloGripperDetection.font, fontScale=0.5, color=(0, 0, 255), thickness=1)
         return frame
     
     @staticmethod
     def clamp_frame(frame: cv2.typing.MatLike) -> cv2.typing.MatLike:
         height, width = frame.shape[:2]
-        _MAX_WIDTH: Final[int] = int(1920 * 0.5)
-        _MAX_HEIGHT: Final[int] = int (1080 * 0.5)
-        _width: int = width
-        _height: int = height
-        _ratio: float = width / float(height)
+        _MAX_WIDTH: Final[int] = 640
+        _MAX_HEIGHT: Final[int] = 640
+        _ratio = min(_MAX_WIDTH / width, _MAX_HEIGHT / height )
 
-        if width > _MAX_WIDTH:
-            _width = _MAX_WIDTH
-            _height = int(_MAX_WIDTH / _ratio)
-        elif height > _MAX_HEIGHT:
-            _height = _MAX_HEIGHT
-            _width = int(_MAX_WIDTH / _ratio)
+        _width, _height = int(width * _ratio), int(height * _ratio)
 
-        _frame = cv2.resize(frame, (_width, _height))
-        return _frame
+        _frame = cv2.resize(frame, (_width, _height), interpolation=cv2.INTER_AREA)
+        
+        # Make a white background canvas
+        white_canvas = np.full((_MAX_WIDTH, _MAX_HEIGHT, 3), (255, 255, 255), dtype=np.uint8)
+        
+        # Calculate the center of the image
+        x_offset = (_MAX_WIDTH - _width) // 2
+        y_offset = (_MAX_HEIGHT - _height) // 2
+        
+        # Place the resized image on the canvas
+        white_canvas[y_offset:y_offset + _height, x_offset:x_offset + _width] = _frame
+        
+        return white_canvas
     
     def detect(self, source_frame: cv2.typing.MatLike) -> tuple[list[Results], list[str]]:
         """The core of YoloGripperDetection. Will run the main algorithm on the provided `source_frame` and return the YOLO results and the detected classes.
@@ -240,7 +245,7 @@ class YoloGripperDetection():
             tuple (list[Results], list[str]): The results and detected_classes of `source_frame`.
         """
         results: list[Results] = YoloGripperDetection.model.track(source_frame, classes=YoloGripperDetection.TRACKED_CLASSES)
-        hill_climb(results, source_frame)
+        hill_climb(results, source_frame, verbose=True)
         
         # Get the detected classes
         detected_classes: list[str] = []
@@ -264,7 +269,7 @@ class YoloGripperDetection():
         assert self.setup_type == "photo"
         file_path: str = path
         frame: cv2.typing.MatLike = cv2.imread(file_path) # TODO: Does not actually check if this is a valid path
-        
+        frame: cv2.typing.MatLike = self.clamp_frame(frame) # Clamp image to a viewable size
         results, detected_classes = self.detect(frame)
         
         return frame, detected_classes
@@ -339,7 +344,7 @@ class YoloGripperDetection():
         assert self.setup_type == "photo"
 
         frame, detected_classes = self.photo_detection(path)
-        frame = self.clamp_frame(frame) # Doesn't no much but it sort of helps
+        # frame = self.clamp_frame(frame) # Doesn't no much but it sort of helps
 
         frame = self.add_detected_to_frame(frame=frame, detected_classes=detected_classes)
         # Add information to quit to frame
@@ -400,7 +405,7 @@ class YoloGripperDetection():
         # frame = self.clamp_frame(frame)
         frame: cv2.typing.MatLike = self.add_detected_to_frame(frame=frame, detected_classes=detected_classes)
         cv2.imwrite(filename=destination_path, img=frame)
-        print(f"Exported photo to {destination_path}")
+        print(f"Exported photo to {os.path.abspath(destination_path)}")
     
     def _export_video(self, source_path: str, destination_path: str) -> None:
         """Exports the video from `source_path` (or the webcam if `self.setup_type` is webcam) to `destination_path`.
@@ -475,3 +480,7 @@ class YoloGripperDetection():
             self._export_video(source_path=cleaned_source_path, destination_path=cleaned_destination_path)
         else:
             sys.exit(f"Unknown setup_type: {self.setup_type}!")
+
+if __name__ == "__main__":
+    yolo = YoloGripperDetection("video")
+    yolo.export()
